@@ -1,4 +1,4 @@
-# Copex Studio 3.1.0 — PC e Android
+# Copex Studio 3.2.0 — PC e Android
 
 Estúdio de criação para uso individual, sem login, assinatura ou cotas comerciais. O foco é preparar vídeos em lote e reutilizar templates. Implementação independente, orientada pelas telas da gravação fornecida; não utiliza código, identidade visual ou serviços internos da plataforma de referência.
 
@@ -50,7 +50,7 @@ Vite usa a porta 5173 e encaminha API e mídia para o servidor na porta 3001. N�
 
 Identidade própria com marca vetorial, composição editorial, paleta oliva e creme, tipografia local e prévias dos templates. As telas se adaptam a larguras de 320 px até monitores grandes, com suporte a movimento reduzido. Veja [desktop](docs/preview.png), [templates](docs/templates.png) e [celular](docs/mobile.png).
 
-Projetos abertos são atualizados ao salvar; **Salvar cópia** cria outro projeto. O editor guarda um rascunho neste navegador, incluindo ajustes individuais. O editor de design recupera documento, CSV e formato após recarregar e permite manter o rascunho ao sair. Rascunhos não substituem o salvamento no servidor nem um backup e não passam automaticamente para outro navegador. A interface informa falhas de armazenamento.
+Projetos abertos são atualizados ao salvar; **Salvar cópia** cria outro projeto. O editor guarda um rascunho neste navegador, incluindo ajustes individuais. O editor de design recupera documento, CSV e formato após recarregar e permite manter o rascunho ao sair. Salvar um template guarda também o CSV e o formato no servidor, permitindo reabri-los em outro aparelho. Rascunhos não substituem o salvamento no servidor nem um backup e não passam automaticamente para outro navegador. A interface informa falhas de armazenamento.
 
 Use **Ctrl+K** para buscar telas e projetos e **Ctrl+S** para salvar no editor. Diálogos mantêm o foco, aceitam Escape e devolvem o foco ao controle que os abriu.
 
@@ -70,7 +70,7 @@ A prévia do navegador é aproximada: mixagem, fades, legendas e certos filtros 
 
 ### Templates e criação em massa
 
-Há seis presets iniciais para vídeos e seis designs editáveis. É possível salvar novos templates, sem limite comercial. O catálogo oferece busca, categorias, favoritos, duplicação, renomeação e importação/exportação de `.copex.json`. Favoritos ficam neste navegador.
+Há seis presets iniciais para vídeos e seis designs editáveis. É possível salvar novos templates, sem limite comercial. O catálogo oferece busca, categorias, favoritos, duplicação, renomeação e importação/exportação de `.copex.json`. Favoritos são salvos no servidor e compartilhados entre PC e celular.
 
 Templates de design portáteis incorporam as imagens da biblioteca com até 2048 px. O arquivo portátil tem limite técnico de 12 MB para permitir reimportação; reduza imagens/camadas caso exceda. Templates de vídeo levam os ajustes, mas áudio, SRT e marca d’água precisam ser selecionados novamente no destino. O exportador informa referências ausentes. Imagens incorporadas são importadas como novos arquivos na biblioteca.
 
@@ -156,3 +156,11 @@ A gravação não demonstra os detalhes de todas as telas e o acesso direto ao s
 ## Revisão de estabilidade 3.0.1
 
 A revisão corrigiu a validação de dados persistidos, exportações de design interrompidas, referências de imagens, recuperação de rascunhos, respostas atrasadas da API, legendas SRT e recuperação de lotes após reiniciar o servidor. Consulte [as correções e regressões verificadas](docs/BUGFIXES.md).
+
+## Atualização 3.2.0
+
+Designs em massa agora entram na fila persistente de exportações. Você pode fechar o editor ou o aplicativo depois que o lote for criado; o servidor continua processando. Resultados ficam na central de exportações, com cancelamento, ZIP parcial, repetição apenas das falhas e revisão das linhas pendentes. Uma cópia privada das imagens do design permite recuperar uma exportação mesmo quando a imagem original foi removida. Reiniciar o servidor preserva os resultados concluídos; pendências interrompidas podem ser repetidas.
+
+Lotes concluídos podem ser excluídos para liberar espaço, preservando os arquivos originais. Downloads e publicações em andamento bloqueiam a exclusão. No Android, ZIPs de designs são baixados diretamente pelo gerenciador do sistema.
+
+A instalação do modelo de voz usa uma pasta temporária e só substitui o modelo anterior após conferir os arquivos; instalações simultâneas são bloqueadas e a interface acompanha o estado. A redução de ruído passou a ser aplicada também às imagens. Consulte [validação](docs/VALIDATION.md) para os testes e requisitos externos ainda não ativados.

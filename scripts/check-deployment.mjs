@@ -24,7 +24,10 @@ for (const route of ["/", "/api/state", "/media/uploads/private.png"])
   assert.equal((await fetch(origin + route)).status, 401);
 const health = await (await call("/api/health")).json();
 assert.equal(health.ok, true);
-assert.equal(health.version, "3.1.0");
+const { version } = JSON.parse(
+  await fs.readFile(new URL("../package.json", import.meta.url), "utf8"),
+);
+assert.equal(health.version, version);
 const cap = await (await call("/api/capabilities")).json();
 assert.equal(cap.transcription.engineInstalled, true);
 assert.equal(cap.downloader, true);
@@ -113,7 +116,7 @@ try {
       .toString(),
     "PK",
   );
-  const design = await call("/api/design/export", {
+  const design = await call("/api/design/jobs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -139,13 +142,31 @@ try {
       rows: [{ titulo: "Celular" }, { titulo: "PC" }],
     }),
   });
-  assert.equal(design.status, 200);
+  assert.equal(design.status, 202);
+  const designJob = await design.json();
+  let readyDesign;
+  for (let attempt = 0; attempt < 120; attempt++) {
+    readyDesign = await (await call("/api/jobs/" + designJob.id)).json();
+    if (["done", "failed", "partial"].includes(readyDesign.status)) break;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  assert.equal(readyDesign.status, "done");
+  assert.equal(readyDesign.outputs.length, 2);
+  const designZip = await call("/api/jobs/" + designJob.id + "/download");
+  assert.equal(designZip.status, 200);
   assert.equal(
-    Buffer.from(await design.arrayBuffer())
+    Buffer.from(await designZip.arrayBuffer())
       .subarray(0, 2)
       .toString(),
     "PK",
   );
+  const pin = await call("/api/preferences/pinned-templates/hosting-check", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pinned: true }),
+  });
+  assert.equal(pin.status, 200);
+  assert.ok((await pin.json()).pinnedTemplates.includes("hosting-check"));
   const project = await (
     await call("/api/projects", {
       method: "POST",
@@ -162,7 +183,12 @@ try {
   assert.equal(backup.includes(process.env.COPEX_ACCESS_PASSWORD), false);
   await fs.writeFile(
     "/tmp/copex-deployment-proof.json",
-    JSON.stringify({ jobId: job.id, assetId: v.id, projectId: project.id }),
+    JSON.stringify({
+      jobId: job.id,
+      designJobId: designJob.id,
+      assetId: v.id,
+      projectId: project.id,
+    }),
   );
   console.log(
     "Hospedagem: acesso privado, FFmpeg com texto/marca/SRT, WebP, ZIP, design/CSV e projeto compartilhado passaram.",

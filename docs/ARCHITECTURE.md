@@ -1,4 +1,4 @@
-# Arquitetura — versão 3.1
+# Arquitetura — versão 3.2
 
 ## Módulos
 
@@ -58,3 +58,7 @@ Use o checkout existente em `/workspace/copex`, sem criar worktrees para inicial
 ## Cliente Android e hospedagem
 
 `android/src/com/copex/studio` contém o cliente WebView, políticas de origem e integração com seletores/downloads nativos. Não inclui o backend nem processamento offline. `android/assets/downloads.js` encaminha blobs em blocos para salvamento pelo Android. `server/access.js` fornece acesso privado opcional ao estúdio inteiro; `Dockerfile` exige senha no modo online. `render.yaml` configura HTTPS do provedor e disco durável; `scripts/start-container.sh` prepara permissões, reduz privilégios e pode instalar o modelo oficial em segundo plano. O cliente Android e o navegador de PC usam a mesma API e banco quando configurados para o mesmo servidor.
+
+## Designs persistentes e preferências — 3.2
+
+`server/design-render.js` valida e renderiza linhas; `server/design-jobs.js` integra designs à mesma fila dos vídeos. Documentos, linhas e snapshots das imagens ficam privados em `DATA/design-jobs`, enquanto o banco guarda metadados e resultados por item. O backup de configuração inclui preferências e CSV dos templates, mas não os arquivos dos lotes; um backup completo deve preservar toda a pasta de dados, inclusive `design-jobs`. A projeção de `/api/state` omite o CSV e fornece `hasDataset`; `/api/presets/:id` retorna o template completo sob o mesmo acesso privado. `server/preferences.js` compartilha favoritos entre clientes.

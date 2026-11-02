@@ -1,4 +1,12 @@
-# Validação da versão 3.1.0
+# Validação da versão 3.2.0
+
+Em 2 de novembro de 2026: **50 testes Node e 44 testes Playwright passaram (94 no total)**, sem casos ignorados. Os testes novos cobrem fila persistente de designs, saída parcial, cancelamento, recuperação de imagens, repetição e correção de linhas, CSV/formato entre aparelhos, favoritos no servidor, download Android por HTTP, atualização do estado do modelo, redução de ruído real e exclusão protegida de exportações.
+
+A instalação atômica do modelo foi testada com transporte controlado, incluindo falha de download e preservação da versão anterior. Isso não valida reconhecimento de fala. Os pesos oficiais continuam indisponíveis neste ambiente. As integrações sociais não foram usadas com contas reais. Não há hospedagem pública ativada; o uso local depende do PC ligado. O APK precisa de validação em aparelho Android real e a conexão local precisa ser conferida no Windows do usuário.
+
+---
+
+# Histórico: validação 3.1.0
 
 Em 2 de novembro de 2026: **43 testes Node e 33 testes Playwright passaram (76 no total)**, sem casos ignorados. Build de produção concluído. Além disso, APK compilado e assinatura verificada, regras Java testadas, Docker construído e processamento real validado em contêiner privado com disco persistente. Veja [Android](ANDROID.md) e [hospedagem](DEPLOY.md) para evidências e limites. O APK não foi executado em Android real; as integrações externas não foram validadas ao vivo.
 

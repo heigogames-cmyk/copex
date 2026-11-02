@@ -806,9 +806,19 @@ export function Captions({ state, mutate, notify, navigate, onUse }) {
     (a) => a.type === "audio" || (a.type === "video" && a.hasAudio),
   );
   useEffect(() => {
-    get("/capabilities")
-      .then(setCap)
-      .catch(() => {});
+    let active = true;
+    const refresh = () =>
+      get("/capabilities")
+        .then((value) => {
+          if (active) setCap(value);
+        })
+        .catch(() => {});
+    refresh();
+    const timer = setInterval(refresh, 4000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
   }, [state.operations?.map((t) => t.status).join()]);
   useEffect(() => {
     if (record?.status === "done")
@@ -853,6 +863,7 @@ export function Captions({ state, mutate, notify, navigate, onUse }) {
             icon={Download}
             disabled={
               !cap?.transcription.engineInstalled ||
+              cap?.transcription.installation?.state === "downloading" ||
               (state.operations || []).some(
                 (t) =>
                   t.kind === "model-install" &&
@@ -873,6 +884,19 @@ export function Captions({ state, mutate, notify, navigate, onUse }) {
           </Button>
         )}
       </div>
+      {cap?.transcription.installation?.state === "downloading" && (
+        <div className="info-banner">
+          <Loader2 className="spin" />
+          <p>
+            Preparando o modelo oficial de voz. Você pode continuar usando as
+            outras ferramentas.
+          </p>
+        </div>
+      )}
+      {cap?.transcription.installation?.state === "failed" &&
+        !cap?.transcription.modelReady && (
+          <p className="error-text">{cap.transcription.installation.error}</p>
+        )}
       {(state.operations || [])
         .filter((t) => t.kind === "model-install")
         .slice(0, 1)

@@ -1,3 +1,5 @@
+import { registerPreferences } from "./preferences.js";
+import { registerDesignJobs } from "./design-jobs.js";
 import { registerPublicMedia } from "./public-media.js";
 import { accessControl } from "./access.js";
 import { recoverJobs } from "./jobs.js";
@@ -31,6 +33,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = process.env.COPEX_DATA_DIR
   ? path.resolve(process.env.COPEX_DATA_DIR)
   : path.join(ROOT, ".data");
+await fs.mkdir(DATA, { recursive: true, mode: 0o700 });
+await fs.chmod(DATA, 0o700);
 for (const d of ["uploads", "exports", "thumbs", "tmp"])
   await fs.mkdir(path.join(DATA, d), { recursive: true });
 const dbfile = path.join(DATA, "database.json");
@@ -108,6 +112,7 @@ app.use("/media", (req, res) =>
 );
 const wrap = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
+registerPreferences({ app, db, save, wrap });
 const upload = multer({
   dest: path.join(DATA, "tmp"),
   limits: { fileSize: 2 * 1024 * 1024 * 1024 },
@@ -336,8 +341,21 @@ app.get(
   }),
 );
 app.get("/api/state", (req, res) =>
-  res.json({ ...db, assets: db.assets.map(publicAsset), defaults }),
+  res.json({
+    ...db,
+    presets: db.presets.map(({ datasetCsv, ...preset }) => ({
+      ...preset,
+      hasDataset: typeof datasetCsv === "string" && datasetCsv.length > 0,
+    })),
+    assets: db.assets.map(publicAsset),
+    defaults,
+  }),
 );
+app.get("/api/presets/:id", (req, res) => {
+  const preset = db.presets.find((p) => p.id === req.params.id);
+  if (!preset) return res.sendStatus(404);
+  res.json(preset);
+});
 app.post(
   "/api/upload",
   upload.array("files"),
@@ -456,7 +474,10 @@ app.put(
   }),
 );
 const activeControllers = new Map();
+const deletingJobs = new Set(),
+  activeDownloads = new Map();
 let processing = false;
+let designJobs;
 async function pump() {
   if (processing) return;
   processing = true;
@@ -479,8 +500,14 @@ async function pump() {
         }
       } catch (e) {
         if (job.status !== "cancelled") {
-          job.status = "failed";
+          job.status = job.outputs?.length ? "partial" : "failed";
           job.error = e.message;
+          job.finishedAt = new Date().toISOString();
+          for (const item of job.items || [])
+            if (item.status !== "done") {
+              item.status = "failed";
+              item.error = e.message;
+            }
         }
       }
       if (job.recipeId) {
@@ -614,6 +641,7 @@ async function renderItem(job, entry, i, total, signal) {
         [0.349, 0.686, 0.168],
         [0.272, 0.534, 0.131],
       ]);
+    if (s.denoise) im = im.median(3);
     if (s.sharpen) im = im.sharpen();
     const layers = [];
     if (s.text) {
@@ -707,6 +735,7 @@ async function renderItem(job, entry, i, total, signal) {
     });
 }
 async function processJob(job) {
+  if (job.kind === "design") return designJobs.process(job);
   const dir = path.join(DATA, "exports", job.id);
   await fs.mkdir(dir, { recursive: true });
   job.outputs = [];
@@ -865,6 +894,8 @@ app.post(
       throw Error("Este lote não possui itens para repetir.");
     if (activeControllers.has(previous.id))
       throw Error("Aguarde a interrupção do processamento antes de repetir.");
+    if (previous.kind === "design")
+      return res.status(202).json(await designJobs.retry(previous));
     const pending =
       previous.items?.filter((item) => item.status !== "done") ||
       previous.assetIds.map((assetId) => ({ assetId }));
@@ -884,19 +915,91 @@ app.post(
     res.status(202).json(await enqueueJob(body));
   }),
 );
+app.delete(
+  "/api/jobs/:id",
+  wrap(async (req, res) => {
+    const job = db.jobs.find((j) => j.id === req.params.id);
+    if (!job) return res.sendStatus(404);
+    if (
+      deletingJobs.has(job.id) ||
+      activeDownloads.has(job.id) ||
+      job.stopping ||
+      ["queued", "running"].includes(job.status) ||
+      activeControllers.has(job.id)
+    )
+      return res.status(409).json({
+        error:
+          "Conclua ou cancele o processamento e aguarde os downloads antes de excluir este lote.",
+      });
+    if (
+      (db.publications || []).some(
+        (p) =>
+          p.media?.jobId === job.id &&
+          [
+            "draft",
+            "scheduled",
+            "publishing",
+            "processing",
+            "uncertain",
+          ].includes(p.status),
+      )
+    )
+      return res.status(409).json({
+        error:
+          "Este lote está vinculado a uma publicação. Cancele ou conclua a publicação antes de removê-lo.",
+      });
+    deletingJobs.add(job.id);
+    try {
+      await fs.rm(path.join(DATA, "exports", job.id), {
+        recursive: true,
+        force: true,
+      });
+      await fs.rm(path.join(DATA, "design-jobs", job.id + ".json"), {
+        force: true,
+      });
+      db.jobs = db.jobs.filter((j) => j.id !== job.id);
+      for (const rule of db.automations)
+        if (rule.lastJobId === job.id) rule.lastJobId = null;
+      await save();
+      res.json({ removed: job.id });
+    } finally {
+      deletingJobs.delete(job.id);
+    }
+  }),
+);
 app.get(
   "/api/jobs/:id/download",
   wrap(async (req, res) => {
     const j = db.jobs.find((x) => x.id === req.params.id);
     if (
       !j ||
+      deletingJobs.has(j.id) ||
       !["done", "partial", "cancelled"].includes(j.status) ||
       !j.outputs?.length
     )
       return res.status(409).json({ error: "Exportação ainda não concluída." });
-    res.attachment(`copex-${j.id.slice(0, 8)}.zip`);
+    res.attachment(
+      j.kind === "design"
+        ? "copex-designs.zip"
+        : `copex-${j.id.slice(0, 8)}.zip`,
+    );
     const zip = new ZipArchive({ zlib: { level: 1 } });
+    let released = false;
+    activeDownloads.set(j.id, (activeDownloads.get(j.id) || 0) + 1);
+    const release = () => {
+      if (released) return;
+      released = true;
+      const count = activeDownloads.get(j.id) - 1;
+      if (count > 0) activeDownloads.set(j.id, count);
+      else activeDownloads.delete(j.id);
+    };
+    res.once("finish", release);
+    res.once("close", () => {
+      zip.abort();
+      release();
+    });
     zip.on("error", (e) => res.destroy(e));
+    zip.on("warning", (e) => res.destroy(e));
     zip.pipe(res);
     for (const output of j.outputs)
       zip.file(path.join(DATA, "exports", j.id, output.name), {
@@ -905,7 +1008,24 @@ app.get(
     await zip.finalize();
   }),
 );
+app.get("/api/jobs/:id", (req, res) => {
+  const job = db.jobs.find((j) => j.id === req.params.id);
+  if (!job) return res.sendStatus(404);
+  res.json(job);
+});
 const activeDesignAssets = new Map();
+designJobs = registerDesignJobs({
+  app,
+  db,
+  DATA,
+  save,
+  wrap,
+  assetPath,
+  activeAssets: activeDesignAssets,
+  controllers: activeControllers,
+  wake: pump,
+  ingest,
+});
 registerDesigns({
   app,
   db,
@@ -917,6 +1037,7 @@ registerDesigns({
 app.get("/api/backup", (req, res) => {
   res.attachment("copex-configuracoes.json").json({
     version: 1,
+    preferences: db.preferences,
     presets: db.presets,
     plans: db.plans,
     projects: db.projects,
@@ -951,12 +1072,15 @@ async function resolveMedia(reference) {
   const output = job?.outputs[Number(reference?.outputIndex) || 0];
   if (!output) throw Error("Exportação concluída não encontrada.");
   const file = path.join(DATA, "exports", job.id, output.name);
+  const [stat, metadata] = await Promise.all([fs.stat(file), probe(file)]);
+  if (deletingJobs.has(job.id) || !db.jobs.includes(job))
+    throw Error("Este lote está sendo removido. Escolha outra mídia.");
   return {
     file,
     url: output.url,
-    size: (await fs.stat(file)).size,
+    size: stat.size,
     type: output.name.endsWith(".mp4") ? "video" : "image",
-    duration: Number((await probe(file)).format.duration) || 0,
+    duration: Number(metadata.format.duration) || 0,
   };
 }
 await registerAdvanced({

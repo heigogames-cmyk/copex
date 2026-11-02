@@ -99,6 +99,7 @@ import {
   sizes,
   uid,
   parseCSV,
+  stringifyCSV,
   interpolate,
   templateSVG,
 } from "../shared/core.js";
@@ -296,6 +297,7 @@ function App() {
     [mobile, setMobile] = useState(false),
     [preview, setPreview] = useState(null),
     [confirm, setConfirm] = useState(null),
+    [confirmBusy, setConfirmBusy] = useState(false),
     [design, setDesign] = useState(() => {
       const r = readDraft("copex:design:v3");
       return r?.doc &&
@@ -768,11 +770,31 @@ function App() {
           )}
           {page === "exports" && (
             <Exports
+              confirm={setConfirm}
               state={state}
               mutate={mutate}
               notify={notify}
               setPreview={setPreview}
-              editFailed={(job) => {
+              editFailed={async (job) => {
+                if (job.kind === "design") {
+                  const source = await mutate(
+                    "/design/jobs/" + job.id + "/edit",
+                    "POST",
+                    {},
+                  );
+                  if (source) {
+                    setDesign({
+                      ...source.doc,
+                      _draftCsv: stringifyCSV(source.rows),
+                      _draftFormat: source.format,
+                      recovered: true,
+                    });
+                    notify(
+                      "Revise as variações não concluídas. As imagens do lote foram preservadas.",
+                    );
+                  }
+                  return;
+                }
                 if (job.segments) {
                   navigate("cuts");
                   notify(
@@ -891,22 +913,35 @@ function App() {
       {confirm && (
         <Modal
           title={confirm.title || "Excluir item?"}
-          onClose={() => setConfirm(null)}
+          onClose={() => {
+            if (!confirmBusy) setConfirm(null);
+          }}
         >
           <p className="modal-text">
             {confirm.message ||
               "Esta ação remove o item deste estúdio. Ela não pode ser desfeita."}
           </p>
           <div className="modal-actions">
-            <Button onClick={() => setConfirm(null)}>Cancelar</Button>
+            <Button disabled={confirmBusy} onClick={() => setConfirm(null)}>
+              Cancelar
+            </Button>
             <Button
               variant="danger"
+              disabled={confirmBusy}
               onClick={async () => {
-                await confirm.action();
-                setConfirm(null);
+                if (confirmBusy) return;
+                setConfirmBusy(true);
+                try {
+                  await confirm.action();
+                  setConfirm(null);
+                } catch (error) {
+                  notify(error.message, "error");
+                } finally {
+                  setConfirmBusy(false);
+                }
               }}
             >
-              Excluir
+              {confirmBusy ? "Excluindo…" : "Excluir"}
             </Button>
           </div>
         </Modal>
@@ -3091,7 +3126,7 @@ function SettingsPage({ state, mutate, notify }) {
         <section className="panel settings-card">
           <h2>Sobre o Copex Studio</h2>
           <div className="version">
-            3.1.0 <span>INDEPENDENT STUDIO EDITION</span>
+            3.2.0 <span>INDEPENDENT STUDIO EDITION</span>
           </div>
           <p>
             Uso individual, sem login, planos ou cotas comerciais. O
@@ -3155,6 +3190,7 @@ function DesignEditor({ initial, state, onClose, mutate, notify }) {
     [closeConfirm, setCloseConfirm] = useState(false);
   const savedSnapshot = useRef(initial.recovered ? "" : JSON.stringify(doc)),
     csvSnapshot = useRef(csv),
+    formatSnapshot = useRef(format),
     exportController = useRef(null);
   useEffect(() => () => exportController.current?.abort(), []);
   const designDraftStatus = useDraft("copex:design:v3", {
@@ -3166,7 +3202,8 @@ function DesignEditor({ initial, state, onClose, mutate, notify }) {
   function requestClose() {
     if (
       JSON.stringify(doc) !== savedSnapshot.current ||
-      csv !== csvSnapshot.current
+      csv !== csvSnapshot.current ||
+      format !== formatSnapshot.current
     )
       setCloseConfirm(true);
     else onClose(false);
@@ -3391,18 +3428,45 @@ function DesignEditor({ initial, state, onClose, mutate, notify }) {
     setBusy(true);
     exportController.current = new AbortController();
     try {
-      const res = await fetch("/api/design/export", {
-        signal: exportController.current.signal,
+      const signal = exportController.current.signal;
+      const submitted = await api("/design/jobs", {
+        signal,
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ doc, rows: batch ? rows : [row], format }),
       });
-      if (!res.ok) {
-        const j = await res.json();
-        throw Error(j.error);
+      notify(
+        "Criação enviada para Exportações. O servidor continua trabalhando se você sair.",
+      );
+      let job = submitted;
+      while (["queued", "running"].includes(job.status)) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        job = await api("/jobs/" + submitted.id, { signal });
       }
+      if (!job.outputs?.length)
+        throw Error(
+          job.error || "Nenhuma variação foi concluída. Confira Exportações.",
+        );
+      if (navigator.userAgent.includes("CopexAndroid/")) {
+        const link = document.createElement("a");
+        link.href = "/api/jobs/" + job.id + "/download";
+        link.download = "copex-designs.zip";
+        link.click();
+        notify(
+          "Arquivo pronto. Download enviado ao Android; o lote permanece em Exportações.",
+        );
+        return;
+      }
+      const res = await fetch("/api/jobs/" + job.id + "/download", { signal });
+      if (!res.ok)
+        throw Error(
+          (await res.json()).error ||
+            "Não foi possível baixar. O lote continua em Exportações.",
+        );
       downloadBlob(await res.blob(), "copex-designs.zip");
-      notify(`${batch ? rows.length : 1} design(s) exportado(s).`);
+      notify(
+        `${job.outputs.length} design(s) exportado(s).${job.status !== "done" ? " Confira as falhas em Exportações." : ""}`,
+        job.status === "done" ? "success" : "error",
+      );
     } catch (e) {
       if (e.name !== "AbortError") notify(e.message, "error");
     } finally {
@@ -3414,12 +3478,20 @@ function DesignEditor({ initial, state, onClose, mutate, notify }) {
     const r = await mutate(
       savedPresetId ? "/presets/" + savedPresetId : "/presets",
       savedPresetId ? "PUT" : "POST",
-      { kind: "design", name: doc.name, doc },
+      {
+        kind: "design",
+        name: doc.name,
+        doc,
+        datasetCsv: csv,
+        exportFormat: format,
+      },
     );
     setSaveBusy(false);
     if (r) {
       setSavedPresetId(r.id);
       savedSnapshot.current = JSON.stringify(doc);
+      csvSnapshot.current = csv;
+      formatSnapshot.current = format;
       notify(
         savedPresetId
           ? "Design atualizado em Meus templates."
@@ -4051,8 +4123,8 @@ function DesignEditor({ initial, state, onClose, mutate, notify }) {
               rascunho neste navegador e retomar pela visão geral.
             </p>
             <small>
-              O botão Salvar template guarda o layout no estúdio; os dados CSV
-              ficam no rascunho.
+              Salvar template guarda o layout e os dados CSV no estúdio para
+              continuar em outro aparelho.
             </small>
           </div>
           <div className="modal-actions">

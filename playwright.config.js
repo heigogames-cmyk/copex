@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: `PORT=3002 COPEX_DATA_DIR=${testDataDir} npm start`,
+    command: `exec env NODE_ENV=production PORT=3002 COPEX_DATA_DIR=${testDataDir} node server/index.js`,
     url: "http://127.0.0.1:3002/api/health",
     reuseExistingServer: false,
     timeout: 30000,

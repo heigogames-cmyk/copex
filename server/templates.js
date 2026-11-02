@@ -103,9 +103,19 @@ export function validateTemplate(input) {
     }
     return e;
   });
+  if (
+    input.datasetCsv !== undefined &&
+    (typeof input.datasetCsv !== "string" ||
+      input.datasetCsv.length > 2 * 1024 * 1024)
+  )
+    throw Error("Dados CSV do template inválidos ou maiores que 2 MB.");
   return {
     ...common,
     kind: "design",
+    datasetCsv: input.datasetCsv ?? "",
+    exportFormat: ["png", "jpeg", "webp"].includes(input.exportFormat)
+      ? input.exportFormat
+      : "png",
     doc: {
       name,
       category: common.category,

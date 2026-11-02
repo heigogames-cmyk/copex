@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   XCircle,
   SlidersHorizontal,
+  Trash2,
 } from "lucide-react";
 import { Button, PageHeading, Empty } from "./studio-ui.jsx";
 const labels = {
@@ -45,6 +46,7 @@ export function ExportCenter({
   notify,
   setPreview,
   editFailed,
+  confirm,
 }) {
   const [filter, setFilter] = useState("Todas"),
     [query, setQuery] = useState(""),
@@ -149,6 +151,9 @@ export function ExportCenter({
                 j.items?.filter((i) => i.status === "done").length ??
                 j.outputs.length,
               total = j.items?.length || j.assetIds.length,
+              canRetry =
+                ["partial", "failed", "cancelled"].includes(j.status) &&
+                (!j.items?.length || j.items.some((i) => i.status !== "done")),
               available =
                 ["done", "partial", "cancelled"].includes(j.status) &&
                 j.outputs?.length > 0;
@@ -208,10 +213,10 @@ export function ExportCenter({
                         Revisar ajustes
                       </Button>
                     )}
-                  {["partial", "failed", "cancelled"].includes(j.status) && (
+                  {canRetry && (
                     <Button
                       icon={RefreshCw}
-                      disabled={busy.includes(j.id)}
+                      disabled={busy.includes(j.id) || j.stopping}
                       onClick={() =>
                         act(j.id, async () => {
                           const r = await mutate(
@@ -228,6 +233,32 @@ export function ExportCenter({
                       {j.status === "partial"
                         ? "Repetir itens com erro"
                         : "Tentar novamente"}
+                    </Button>
+                  )}
+                  {confirm && !["running", "queued"].includes(j.status) && (
+                    <Button
+                      icon={Trash2}
+                      disabled={busy.includes(j.id) || j.stopping}
+                      onClick={() =>
+                        confirm({
+                          title: "Excluir exportação?",
+                          message:
+                            "Os arquivos exportados e o histórico deste lote serão apagados. As mídias originais da biblioteca serão preservadas.",
+                          action: () =>
+                            act(j.id, async () => {
+                              const result = await mutate(
+                                "/jobs/" + j.id,
+                                "DELETE",
+                              );
+                              if (result)
+                                notify(
+                                  "Exportação removida e espaço liberado.",
+                                );
+                            }),
+                        })
+                      }
+                    >
+                      Excluir lote
                     </Button>
                   )}
                 </div>

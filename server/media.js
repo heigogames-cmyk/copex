@@ -106,6 +106,20 @@ export function normalizeSettings(raw = {}) {
   s.height = Math.round(s.height / 2) * 2;
   s.fps = Math.round(s.fps);
   s.crf = Math.round(s.crf);
+  for (const [key, value] of Object.entries(defaults))
+    if (typeof value === "boolean")
+      s[key] = typeof s[key] === "boolean" ? s[key] : value;
+  for (const key of ["watermarkId", "audioId", "subtitleId"])
+    s[key] = typeof s[key] === "string" ? s[key].trim().slice(0, 120) : "";
+  s.filter = ["none", "mono", "warm", "cool", "vintage"].includes(s.filter)
+    ? s.filter
+    : "none";
+  if (s.imageFormat !== undefined)
+    s.imageFormat = ["png", "jpeg", "webp"].includes(s.imageFormat)
+      ? s.imageFormat
+      : "png";
+  if (s.prefix !== undefined)
+    s.prefix = typeof s.prefix === "string" ? s.prefix.slice(0, 50) : "copex";
   s.text = String(s.text || "").slice(0, 2000);
   s.fit = ["cover", "contain"].includes(s.fit) ? s.fit : "cover";
   s.rotation = [0, 90, 180, 270].includes(Number(s.rotation))

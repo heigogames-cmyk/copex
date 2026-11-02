@@ -14,7 +14,7 @@ Não use disco efêmero para guardar suas mídias. O blueprint desativa implanta
 
 ## O que foi testado
 
-Imagem `copex-studio:3.1.0` construída com Node 24, FFmpeg, libass, fontes, Python, yt-dlp e faster-whisper. Contêiner executado com senha de teste, acesso anônimo bloqueado, `api/ready` disponível sem dados privados e servidor Node com UID 1000. Testados: upload real, vídeo com texto/marca/SRT, imagem WebP, ZIP, design com duas linhas CSV, projeto compartilhado e dados preservados após reinício em volume Docker. Interface móvel acessada sob autenticação HTTP. Pesos do Whisper não foram baixados neste ambiente e o serviço Render não foi criado.
+Imagem `copex-studio:3.2.0` construída com Node 24, FFmpeg, libass, fontes, Python, yt-dlp e faster-whisper. Contêiner executado com senha de teste, acesso anônimo bloqueado, `api/ready` disponível sem dados privados e servidor Node com UID 1000. Testados: upload real, vídeo com texto/marca/SRT, imagem WebP, ZIP, design com duas linhas CSV, projeto compartilhado e dados preservados após reinício em volume Docker. Interface móvel acessada sob autenticação HTTP. Pesos do Whisper não foram baixados neste ambiente e o serviço Render não foi criado.
 
 ## Outro provedor / VPS
 

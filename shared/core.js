@@ -76,6 +76,19 @@ export function parseCSV(input) {
     return Object.fromEntries(headers.map((h, j) => [h, r[j]]));
   });
 }
+export function stringifyCSV(rows) {
+  if (!Array.isArray(rows) || !rows.length) return "";
+  const headers = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+  const cell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+  return [
+    headers.map(cell).join(","),
+    ...rows.map((row) =>
+      headers
+        .map((key) => cell(Object.hasOwn(row, key) ? row[key] : ""))
+        .join(","),
+    ),
+  ].join("\r\n");
+}
 export function templateSVG(doc, row = {}, images = {}) {
   const w = Number(doc.width),
     h = Number(doc.height);

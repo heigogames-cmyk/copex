@@ -108,6 +108,15 @@ public class MainActivity extends Activity {
   private void showConnection(String error) {
     exitFullScreen();
     trusted = false;
+    synchronized (bridge) {
+      for (PendingFile transfer : files.values()) {
+        try {
+          transfer.stream.close();
+        } catch (Exception ignored) {}
+        transfer.file.delete();
+      }
+      files.clear();
+    }
     if (web != null) {
       web.stopLoading();
       web.removeJavascriptInterface("CopexFiles");
@@ -231,7 +240,7 @@ public class MainActivity extends Activity {
     settings.setBuiltInZoomControls(false);
     settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     settings.setUserAgentString(
-      settings.getUserAgentString() + " CopexAndroid/3.1.0"
+      settings.getUserAgentString() + " CopexAndroid/3.2.0"
     );
     CookieManager.getInstance().setAcceptCookie(true);
     CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);

@@ -1,4 +1,4 @@
-# Copex Studio para Android — 3.1.0
+# Copex Studio para Android — 3.2.0
 
 ## Instalação
 
@@ -15,7 +15,7 @@ A interface é a mesma do estúdio no PC e usa a mesma API e arquivos. Todos os 
 
 O aplicativo oferece seleção múltipla de arquivos pelo seletor do Android, reprodução de vídeo com tela cheia, retorno, recarregamento, mudança de servidor e tratamento de conexão interrompida. Arquivos HTTP são baixados para Downloads com nomes distintos. ZIP/CSV/JSON/exports gerados por Blob são transmitidos em blocos para um arquivo temporário privado, e o Android pergunta onde salvá-lo. O app não pede acesso irrestrito ao armazenamento.
 
-Arquivos e projetos salvos no servidor são compartilhados entre celular e PC quando ambos usam o mesmo endereço. Rascunhos não salvos e favoritos de templates ainda pertencem ao navegador/dispositivo; salve o projeto/template antes de trocar de aparelho. O processamento de vídeo, imagens, voz e integrações ocorre no servidor. O aplicativo não edita vídeos offline nem incorpora FFmpeg/Whisper no APK.
+Arquivos e projetos salvos no servidor são compartilhados entre celular e PC quando ambos usam o mesmo endereço. Favoritos de templates ficam no servidor. Templates salvos incluem CSV e formato. Rascunhos não salvos pertencem ao navegador/dispositivo; salve o projeto/template antes de trocar de aparelho. O processamento de vídeo, imagens, voz e integrações ocorre no servidor. O aplicativo não edita vídeos offline nem incorpora FFmpeg/Whisper no APK.
 
 ## Privacidade e conexão
 
@@ -44,3 +44,7 @@ Esta opção não exige hospedagem, mas mantém o processamento no PC ligado. Ba
 O script pede elevação do Windows, exige que a rede esteja marcada como **Privada**, verifica o servidor atualizado e protegido, encaminha apenas a porta 3001 do IP local do PC para o WSL e cria uma regra de firewall limitada à rede privada/sub-rede local. Não configura o roteador e não publica o estúdio na internet. O celular deve estar no mesmo Wi-Fi doméstico, sem isolamento de dispositivos/rede de convidados. A senha fica em `~/.local/share/copex-studio/.access-password`, com permissão restrita. Se o IP do WSL mudar após reiniciar, execute novamente o conector. Encaminhamentos desconhecidos são preservados. A implementação PowerShell não pôde ser executada em Windows real neste ambiente.
 
 A senha local e a marcação `.mobile-private` devem acompanhar o backup da pasta de instalação no Ubuntu, além de `.data`. Quando o modo privado já foi preparado, o iniciador exige senha para não abrir sem proteção por engano. O parser oficial PowerShell validou a sintaxe dos dois scripts; os comandos específicos de rede ainda não foram executados em um Windows real nesta entrega.
+
+## Continuidade na versão 3.2
+
+Depois de criar um lote de designs, é possível sair do editor ou fechar o app: a fila continua no servidor. Consulte a central de exportações para baixar os resultados ou repetir falhas. O APK usa download HTTP direto para esses ZIPs, evitando manter o arquivo inteiro na memória da WebView. O servidor precisa estar ligado; isso não transforma o processamento em edição offline.

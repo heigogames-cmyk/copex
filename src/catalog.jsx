@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Plus,
   Upload,
@@ -30,10 +30,33 @@ export function TemplateLibrary({
   const [query, setQuery] = useState(""),
     [tab, setTab] = useState("Todos"),
     [kind, setKind] = useState("Vídeo"),
-    [pins, setPins] = useState(() => readDraft("copex:pinned-templates", [])),
     [rename, setRename] = useState(null),
     [busy, setBusy] = useState(false);
-  const input = useRef();
+  const input = useRef(),
+    migrating = useRef(false);
+  const [pinBusy, setPinBusy] = useState([]);
+  const pins =
+    state.preferences?.pinnedTemplates ||
+    readDraft("copex:pinned-templates", []);
+  useEffect(() => {
+    if (!state.preferences || migrating.current) return;
+    const stored = readDraft("copex:pinned-templates", []);
+    const legacy = stored.filter(
+      (id) => typeof id === "string" && /^[-\w]{1,120}$/.test(id),
+    );
+    if (!legacy.length) {
+      if (stored.length) writeDraft("copex:pinned-templates", null);
+      return;
+    }
+    migrating.current = true;
+    mutate("/preferences/pinned-templates", "POST", { ids: legacy })
+      .then((r) => {
+        if (r) writeDraft("copex:pinned-templates", null);
+      })
+      .finally(() => {
+        migrating.current = false;
+      });
+  }, [state.preferences]);
   const videos = [
     ...builtinVideo,
     ...state.presets.filter((p) => p.kind !== "design"),
@@ -49,6 +72,8 @@ export function TemplateLibrary({
         kind: "design",
         saved: true,
         category: p.category,
+        _draftCsv: p.datasetCsv,
+        _draftFormat: p.exportFormat,
       })),
   ];
   const matches = (p) =>
@@ -58,20 +83,44 @@ export function TemplateLibrary({
       p.category === tab) &&
     p.name.toLocaleLowerCase().includes(query.toLocaleLowerCase());
   const visible = (kind === "Vídeo" ? videos : designs).filter(matches);
-  const pinned = (id) => {
-    const next = pins.includes(id)
-      ? pins.filter((i) => i !== id)
-      : [...pins, id];
-    setPins(next);
-    writeDraft("copex:pinned-templates", next);
+  const pinned = async (id) => {
+    if (pinBusy.includes(id)) return;
+    setPinBusy((ids) => [...ids, id]);
+    try {
+      await mutate(
+        "/preferences/pinned-templates/" + encodeURIComponent(id),
+        "PUT",
+        { pinned: !pins.includes(id) },
+      );
+    } finally {
+      setPinBusy((ids) => ids.filter((v) => v !== id));
+    }
   };
   const source = (p) =>
     state.presets.find((t) => t.id === p.id) ||
     (p.kind === "design"
       ? { kind: "design", name: p.name, category: p.category, doc: p }
       : p);
+  const fullSource = async (p) =>
+    state.presets.some((t) => t.id === p.id)
+      ? await mutate("/presets/" + p.id, "GET")
+      : source(p);
+  const openDesign = async (p) => {
+    if (p.saved) {
+      const saved = await fullSource(p);
+      if (saved)
+        setDesign({
+          ...saved.doc,
+          id: saved.id,
+          saved: true,
+          _draftCsv: saved.datasetCsv,
+          _draftFormat: saved.exportFormat,
+        });
+    } else setDesign(JSON.parse(JSON.stringify(p)));
+  };
   const duplicate = async (p) => {
-    const original = source(p);
+    const original = await fullSource(p);
+    if (!original) return;
     const r = await mutate("/presets", "POST", {
       ...original,
       id: undefined,
@@ -107,6 +156,7 @@ export function TemplateLibrary({
         className={"icon-btn " + (pins.includes(p.id) ? "pinned" : "")}
         aria-label={"Favoritar " + p.name}
         aria-pressed={pins.includes(p.id)}
+        disabled={pinBusy.includes(p.id)}
         title="Favoritar"
         onClick={() => pinned(p.id)}
       >
@@ -329,7 +379,7 @@ export function TemplateLibrary({
               <article className="template-card" key={p.id}>
                 <button
                   className="design-preview"
-                  onClick={() => setDesign(JSON.parse(JSON.stringify(p)))}
+                  onClick={() => openDesign(p)}
                 >
                   <img
                     src={

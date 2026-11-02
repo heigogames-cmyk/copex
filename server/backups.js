@@ -1,3 +1,4 @@
+import { pinnedIds } from "./preferences.js";
 import { validateRecord as validateStudioRecord } from "./records.js";
 import { validateTemplate } from "./templates.js";
 import { normalizeSettings } from "./media.js";
@@ -232,7 +233,9 @@ function validateRecord(key, raw) {
 export function prepareRestore(database, input) {
   if (
     input?.version !== 1 ||
-    (!keys.some((key) => input[key] !== undefined) && !input.brand)
+    (!keys.some((key) => input[key] !== undefined) &&
+      !input.brand &&
+      !input.preferences)
   )
     throw Error("Backup incompatível.");
   const prepared = {};
@@ -261,6 +264,17 @@ export function prepareRestore(database, input) {
       throw Error("Cor de marca inválida no backup.");
     prepared.brand = { name, color: input.brand.color };
   }
+  if (input.preferences !== undefined) {
+    if (
+      !input.preferences ||
+      typeof input.preferences !== "object" ||
+      Array.isArray(input.preferences)
+    )
+      throw Error("Preferências inválidas no backup.");
+    prepared.preferences = {
+      pinnedTemplates: pinnedIds(input.preferences.pinnedTemplates),
+    };
+  }
   return { prepared, added, ignored };
 }
 export function applyRestore(database, input) {
@@ -271,5 +285,14 @@ export function applyRestore(database, input) {
       database[key].push(...result.prepared[key]);
     }
   if (result.prepared.brand) database.brand = result.prepared.brand;
+  if (result.prepared.preferences)
+    database.preferences = {
+      pinnedTemplates: [
+        ...new Set([
+          ...(database.preferences?.pinnedTemplates || []),
+          ...result.prepared.preferences.pinnedTemplates,
+        ]),
+      ],
+    };
   return { added: result.added, ignored: result.ignored };
 }

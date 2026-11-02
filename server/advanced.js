@@ -85,11 +85,39 @@ export async function registerAdvanced({
     );
     return checks.every(Boolean);
   };
+  async function installationStatus() {
+    try {
+      const info = JSON.parse(
+        await fs.readFile(model + ".status.json", "utf8"),
+      );
+      if (info.state === "downloading") {
+        let alive = true;
+        try {
+          process.kill(Number(info.pid), 0);
+        } catch (e) {
+          alive = e.code === "EPERM";
+        }
+        if (!alive)
+          return {
+            state: "failed",
+            error: "A instalação foi interrompida. Tente instalar novamente.",
+          };
+      }
+      return {
+        state: info.state,
+        model: info.model,
+        error: info.error || null,
+      };
+    } catch {
+      return null;
+    }
+  }
   async function capabilities() {
     return {
       transcription: {
         engineInstalled: engineReady,
         modelReady: await modelReady(),
+        installation: await installationStatus(),
         modelSource: "Systran/faster-whisper-tiny",
         languages: ["pt", "en", "es", "auto"],
       },
@@ -369,6 +397,19 @@ export async function registerAdvanced({
     wrap(async (req, res) => {
       if (!engineReady)
         throw Error("Instale as ferramentas Python conforme o README.");
+      const existing = db.operations.find(
+        (t) =>
+          t.kind === "model-install" &&
+          ["queued", "running"].includes(t.status),
+      );
+      if (existing) return res.status(202).json(existing);
+      const installing = await installationStatus();
+      if (installing?.state === "downloading")
+        return res.status(202).json({
+          kind: "model-install",
+          status: "running",
+          message: "O modelo já está sendo preparado.",
+        });
       if (await modelReady())
         return res.json({ status: "done", message: "Modelo já disponível." });
       const task = {

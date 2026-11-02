@@ -1,3 +1,19 @@
+# Revisão 3.2.0
+
+- Designs em massa deixaram de depender da conexão aberta com o editor; fila persistente, resultados por linha e repetição seletiva.
+- Templates guardam CSV e formato no servidor; favoritos são compartilhados entre aparelhos e incluídos no backup de configuração.
+- Imagens de designs recebem snapshot privado para recuperação posterior.
+- Downloads grandes no Android usam o gerenciador do sistema; transferências incompletas são limpas ao trocar de servidor.
+- Instalação do modelo usa trava e troca atômica, preservando o anterior em caso de falha; a interface atualiza o estado automaticamente.
+- Strings importadas não ativam booleanos por engano; redução de ruído funciona também para imagens.
+- Exclusão de exportações preserva originais e bloqueia arquivos usados em downloads ou publicações.
+- Criação simultânea da senha local não pode produzir arquivos truncados ou senhas diferentes.
+- Servidor temporário dos testes é encerrado diretamente, sem deixar um processo intermediário na porta.
+
+Validação: 50 testes Node e 44 de navegador, sem ignorados. Histórico abaixo descreve o comportamento das versões anteriores; em 3.2.0, fechar o editor interrompe apenas a espera e o lote continua no servidor.
+
+---
+
 # Revisão de estabilidade — Copex Studio 3.0.1
 
 Revisão realizada em 2 de novembro de 2026. O código e os dados de produção foram preservados; testes usam diretórios temporários exclusivos.
