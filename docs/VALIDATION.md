@@ -1,0 +1,35 @@
+# Validação da versão 3.0.1
+
+Executada em 2 de novembro de 2026 no ambiente preparado.
+
+## Verificações concluídas
+
+- Build de produção concluído.
+- **38 testes Node passaram**: CSV/SVG, designs, filtros e renderização real FFmpeg; SRT; radar com dados ausentes; cenas/pausas; agrupamento de palavras; fusos e datas inválidas; cofre criptografado; contratos YouTube/TikTok/Instagram; validação de destinos; agendamento sem duplicação; consulta de estado incerto sem nova postagem; conferência de posse de vídeo.
+- **28 testes Playwright passaram**: importação; editor; templates; ZIP; imagem WebP; divisão de vídeo; design/CSV; calendário e backup; interface móvel; tratamento de erros; arrastar/redimensionar/desfazer; receitas manuais; radar com CSV; cortes múltiplos com durações verificadas nos MP4; estado de modelo ausente; configuração social sem falsa conexão; bloqueio de arquivo privado; receita automática com mídia real.
+- Revisão adicional: schemas de templates e backups, restauração atômica e conexões desativadas, armazenamento corrompido/cheio, proteção de dependências da biblioteca e cancelamento de FFmpeg real.
+- Navegador: atualização/cópia de projetos; recuperação de rascunhos e CSV; fontes; templates com imagens incorporadas; favoritos e duplicação; lote parcialmente concluído e ZIP; repetição apenas de falhas; correção individual de corte; cancelamento real; busca global, histórico, foco dos diálogos; biblioteca em massa; telas principais em 1280/768/390/320 px.
+- O fluxo de template portátil foi repetido após acrescentar tratamento de erro de download e limite de 12 MB. Build final passou. Saúde, estado e capacidades retornaram 200 no servidor de produção; caminhos privados retornaram 404, sem erros de execução no navegador ao capturar as telas.
+- Dependências de produção não foram alteradas nesta revisão. A auditoria da entrega anterior registrou zero vulnerabilidades; isso não substitui uma consulta atualizada a avisos externos.
+- Ambiente Python: `pip check` sem dependências quebradas; versões fixadas em `requirements-tools.txt`.
+
+Os testes não possuem casos ignorados na execução final. Os testes sociais usam transporte controlado, sem contas reais e sem enviar publicações. A confirmação do estado de modelo ausente é um teste de tratamento de requisito; **não valida reconhecimento de fala**.
+
+## Revisão de estabilidade
+
+A suíte passou integralmente com 66 testes, sem casos ignorados. Foram acrescentados testes para dados inválidos sem mutação, limpeza de arquivos após falha/desconexão, imagens corrompidas/ausentes, proteção de mídias, respostas atrasadas, recuperação de CSV vazio/formato, isolamento do Ctrl+S, receitas WebP reais, SRT fora de ordem, caminhos com espaços/apóstrofos, dados de radar inválidos e recuperação de lotes após reinicialização. Todas as telas foram conferidas entre celular, tablet e desktop; as principais também em 390 px. Os testes continuam usando banco temporário separado dos dados de produção.
+
+Veja [o relatório de correções](BUGFIXES.md). A cobertura descrita não constitui garantia de ausência de qualquer bug e não valida serviços externos bloqueados.
+
+## Requisitos externos bloqueados
+
+- O proxy retornou 403 para Velyra, documentação/APIs externas e Hugging Face.
+- O motor faster-whisper está instalado, mas o modelo oficial não foi baixado. Nenhum áudio foi transcrito com um modelo real.
+- Nenhuma credencial social estava configurada e nenhuma conta foi conectada. A publicação ao vivo e a consulta de métricas reais precisam de rede e autorização dos provedores.
+- Instagram precisa de um endereço HTTPS público dos vídeos, além das permissões da conta profissional.
+
+Os domínios necessários foram salvos no rascunho do ambiente. Salvar não comprova aplicação da política, publicação do snapshot ou restauração em uma nova máquina.
+
+## Limites da entrega
+
+Não houve envio do código ao GitHub ou implantação pública. O projeto funciona localmente para edição, templates, radar com dados importados, cortes e receitas. Os módulos externos estão implementados, mas sua ativação e validação dependem dos requisitos acima. A gravação não permite garantir equivalência com todas as funcionalidades internas da plataforma original.

@@ -1,0 +1,413 @@
+import React, { useState, useRef } from "react";
+import {
+  Plus,
+  Upload,
+  Download,
+  Search,
+  Star,
+  Copy,
+  Pencil,
+  Trash2,
+  ArrowUpRight,
+  Layers,
+  Film,
+  Image as ImageIcon,
+} from "lucide-react";
+import { Button, Field, Modal, PageHeading, Empty } from "./studio-ui.jsx";
+import { readDraft, writeDraft, downloadJSON } from "./drafts.js";
+import { templateSVG } from "../shared/core.js";
+export function TemplateLibrary({
+  state,
+  applyPreset,
+  setDesign,
+  mutate,
+  notify,
+  confirm,
+  builtinVideo,
+  builtinDesign,
+  Card,
+}) {
+  const [query, setQuery] = useState(""),
+    [tab, setTab] = useState("Todos"),
+    [kind, setKind] = useState("Vídeo"),
+    [pins, setPins] = useState(() => readDraft("copex:pinned-templates", [])),
+    [rename, setRename] = useState(null),
+    [busy, setBusy] = useState(false);
+  const input = useRef();
+  const videos = [
+    ...builtinVideo,
+    ...state.presets.filter((p) => p.kind !== "design"),
+  ];
+  const designs = [
+    ...builtinDesign.map((p) => ({ ...p, kind: "design" })),
+    ...state.presets
+      .filter((p) => p.kind === "design")
+      .map((p) => ({
+        ...p.doc,
+        id: p.id,
+        name: p.name,
+        kind: "design",
+        saved: true,
+        category: p.category,
+      })),
+  ];
+  const matches = (p) =>
+    (tab === "Todos" ||
+      (tab === "Favoritos" && pins.includes(p.id)) ||
+      (tab === "Meus templates" && state.presets.some((t) => t.id === p.id)) ||
+      p.category === tab) &&
+    p.name.toLocaleLowerCase().includes(query.toLocaleLowerCase());
+  const visible = (kind === "Vídeo" ? videos : designs).filter(matches);
+  const pinned = (id) => {
+    const next = pins.includes(id)
+      ? pins.filter((i) => i !== id)
+      : [...pins, id];
+    setPins(next);
+    writeDraft("copex:pinned-templates", next);
+  };
+  const source = (p) =>
+    state.presets.find((t) => t.id === p.id) ||
+    (p.kind === "design"
+      ? { kind: "design", name: p.name, category: p.category, doc: p }
+      : p);
+  const duplicate = async (p) => {
+    const original = source(p);
+    const r = await mutate("/presets", "POST", {
+      ...original,
+      id: undefined,
+      name: original.name + " · cópia",
+    });
+    if (r) {
+      setTab("Meus templates");
+      notify("Template duplicado. Edite a cópia para criar sua versão.");
+    }
+  };
+  const exportTemplate = async (p) => {
+    try {
+      let bundle = {
+        format: "copex-template",
+        version: 1,
+        template: source(p),
+      };
+      if (state.presets.some((t) => t.id === p.id)) {
+        const response = await fetch("/api/presets/" + p.id + "/export");
+        bundle = await response.json();
+        if (!response.ok)
+          throw Error(bundle.error || "Não foi possível exportar o template.");
+      }
+      downloadJSON(bundle, p.name + ".copex.json");
+      if (bundle.warnings?.length) notify(bundle.warnings.join(" "));
+    } catch (error) {
+      notify(error.message, "error");
+    }
+  };
+  const actions = (p) => (
+    <div className="template-actions">
+      <button
+        className={"icon-btn " + (pins.includes(p.id) ? "pinned" : "")}
+        aria-label={"Favoritar " + p.name}
+        aria-pressed={pins.includes(p.id)}
+        title="Favoritar"
+        onClick={() => pinned(p.id)}
+      >
+        <Star size={14} fill={pins.includes(p.id) ? "currentColor" : "none"} />
+      </button>
+      <button
+        className="icon-btn"
+        aria-label={"Duplicar " + p.name}
+        title="Duplicar"
+        onClick={() => duplicate(p)}
+      >
+        <Copy size={14} />
+      </button>
+      <button
+        className="icon-btn"
+        aria-label={"Exportar " + p.name}
+        title="Exportar template"
+        onClick={() => exportTemplate(p)}
+      >
+        <Download size={14} />
+      </button>
+      {state.presets.some((t) => t.id === p.id) && (
+        <>
+          <button
+            className="icon-btn"
+            aria-label={"Renomear " + p.name}
+            title="Renomear"
+            onClick={() => setRename({ id: p.id, name: p.name })}
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            className="icon-btn"
+            aria-label={"Excluir " + p.name}
+            title="Excluir"
+            onClick={() =>
+              confirm({ action: () => mutate("/presets/" + p.id, "DELETE") })
+            }
+          >
+            <Trash2 size={14} />
+          </button>
+        </>
+      )}
+    </div>
+  );
+  const importFile = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      if (file.size > 12 * 1024 * 1024)
+        throw Error("O arquivo do template deve ter até 12 MB.");
+      const content = JSON.parse(await file.text());
+      const r = await mutate("/presets/import", "POST", content);
+      if (r) {
+        setKind(r.template.kind === "design" ? "Design" : "Vídeo");
+        setTab("Meus templates");
+        setQuery("");
+        notify(
+          "Template importado." +
+            (r.warnings.length ? " " + r.warnings.join(" ") : ""),
+        );
+      }
+    } catch (e) {
+      notify(
+        e instanceof SyntaxError
+          ? "Este arquivo não é um JSON válido."
+          : e.message,
+        "error",
+      );
+    } finally {
+      setBusy(false);
+      event.target.value = "";
+    }
+  };
+  return (
+    <>
+      <input
+        type="file"
+        accept=".json"
+        hidden
+        ref={input}
+        onChange={importFile}
+      />
+      <PageHeading
+        eyebrow="BIBLIOTECA DE ESTILOS / COPEX ORIGINALS"
+        title="Uma assinatura para cada história."
+        description="Um ponto de partida, nunca um ponto final. Escolha, transforme e faça seu."
+      >
+        <Button
+          icon={Upload}
+          disabled={busy}
+          onClick={() => input.current.click()}
+        >
+          {busy ? "Importando…" : "Importar template"}
+        </Button>
+        <Button
+          icon={Plus}
+          variant="primary"
+          onClick={() =>
+            setDesign({
+              name: "Design sem título",
+              width: 1080,
+              height: 1080,
+              background: "#e9e6dd",
+              elements: [],
+            })
+          }
+        >
+          Criar design
+        </Button>
+      </PageHeading>
+      <div className="catalog-intro">
+        <span className="catalog-index">C / 03</span>
+        <div>
+          <b>O seu estilo é o que fica.</b>
+          <p>
+            Vídeos com consistência. Designs com liberdade. Seus favoritos
+            sempre por perto.
+          </p>
+        </div>
+        <Layers size={35} strokeWidth={1} />
+      </div>
+      <div className="toolbar catalog-toolbar">
+        <div className="segmented">
+          {[
+            ["Vídeo", Film],
+            ["Design", ImageIcon],
+          ].map(([name, Icon]) => (
+            <button
+              key={name}
+              aria-label={name}
+              aria-pressed={kind === name}
+              className={kind === name ? "active" : ""}
+              onClick={() => setKind(name)}
+            >
+              <Icon size={16} />
+              {name}
+              <span>{name === "Vídeo" ? videos.length : designs.length}</span>
+            </button>
+          ))}
+        </div>
+        <div className="search">
+          <Search size={16} />
+          <input
+            aria-label="Buscar templates"
+            placeholder="Encontre um estilo…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="filter-tabs">
+        {[
+          "Todos",
+          "Social",
+          "Vídeo",
+          "Promoção",
+          "Stories",
+          "Favoritos",
+          "Meus templates",
+        ].map((t) => (
+          <button
+            aria-pressed={tab === t}
+            className={tab === t ? "active" : ""}
+            key={t}
+            onClick={() => setTab(t)}
+          >
+            {t === "Favoritos" && <Star size={12} />} {t}
+          </button>
+        ))}
+      </div>
+      <div className="collection-caption">
+        <span>
+          {tab === "Todos" ? "A COLEÇÃO COMPLETA" : tab.toLocaleUpperCase()}
+        </span>
+        <span>
+          {visible.length} {visible.length === 1 ? "template" : "templates"}
+        </span>
+      </div>
+      {!visible.length ? (
+        <Empty
+          icon={Layers}
+          title={
+            tab === "Favoritos"
+              ? "Guarde seus próximos favoritos."
+              : "Nenhum estilo por aqui ainda."
+          }
+          description={
+            tab === "Favoritos"
+              ? "Toque na estrela de um template para encontrá-lo nesta coleção."
+              : "Experimente outro filtro, importe um arquivo ou salve um template no editor."
+          }
+        >
+          <Button
+            onClick={() => {
+              setTab("Todos");
+              setQuery("");
+            }}
+          >
+            Explorar coleção
+          </Button>
+        </Empty>
+      ) : (
+        <div
+          className={
+            "template-grid " + (kind === "Design" ? "design-grid" : "")
+          }
+        >
+          {visible.map((p, i) =>
+            kind === "Vídeo" ? (
+              <Card
+                key={p.id}
+                preset={p}
+                index={videos.findIndex((v) => v.id === p.id)}
+                onClick={() => applyPreset(p)}
+                actions={actions(p)}
+              />
+            ) : (
+              <article className="template-card" key={p.id}>
+                <button
+                  className="design-preview"
+                  onClick={() => setDesign(JSON.parse(JSON.stringify(p)))}
+                >
+                  <img
+                    src={
+                      "data:image/svg+xml;charset=utf-8," +
+                      encodeURIComponent(
+                        templateSVG(p, {
+                          titulo: "Novo drop.",
+                          subtitulo: "O extraordinário chegou.",
+                          cta: "DESCUBRA AGORA →",
+                        }),
+                      )
+                    }
+                    alt={p.name}
+                  />
+                  <span className="design-format">
+                    {p.width} × {p.height}
+                  </span>
+                  <div className="template-use">
+                    <Plus size={16} /> Editar design
+                  </div>
+                </button>
+                <div className="template-info">
+                  <div>
+                    <h3>{p.name}</h3>
+                    <p>
+                      {p.category || "Meu estilo"} <span>·</span> Design
+                    </p>
+                  </div>
+                </div>
+                {actions(p)}
+              </article>
+            ),
+          )}
+        </div>
+      )}
+      <div className="info-banner catalog-tip">
+        <Layers size={23} />
+        <div>
+          <b>Feito uma vez. Reimaginado quantas vezes quiser.</b>
+          <p>
+            Exporte seus templates em JSON para guardar ou compartilhar. Imagens
+            dos designs acompanham o arquivo; trilhas e legendas dos presets de
+            vídeo são selecionadas novamente ao importar.
+          </p>
+        </div>
+      </div>
+      {rename && (
+        <Modal title="Renomear template" onClose={() => setRename(null)}>
+          <div className="modal-body">
+            <Field label="Nome do template">
+              <input
+                autoFocus
+                value={rename.name}
+                maxLength={120}
+                onChange={(e) => setRename({ ...rename, name: e.target.value })}
+              />
+            </Field>
+          </div>
+          <div className="modal-actions">
+            <Button onClick={() => setRename(null)}>Cancelar</Button>
+            <Button
+              variant="primary"
+              disabled={!rename.name.trim()}
+              onClick={async () => {
+                const r = await mutate("/presets/" + rename.id, "PUT", {
+                  name: rename.name,
+                });
+                if (r) {
+                  setRename(null);
+                  notify("Nome do template atualizado.");
+                }
+              }}
+            >
+              Salvar nome
+            </Button>
+          </div>
+        </Modal>
+      )}
+    </>
+  );
+}

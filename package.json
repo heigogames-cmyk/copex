@@ -1,0 +1,39 @@
+{
+  "name": "copex-studio",
+  "version": "3.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"node --watch server/index.js\" \"vite --host 0.0.0.0\"",
+    "build": "vite build",
+    "start": "NODE_ENV=production node server/index.js",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src server shared tests *.js *.json README.md docs/*.md",
+    "model:install": ".tools/bin/python scripts/install-model.py"
+  },
+  "dependencies": {
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
+    "archiver": "^8.0.0",
+    "express": "^5.1.0",
+    "lucide-react": "^0.468.0",
+    "multer": "^2.0.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sharp": "^0.35.5",
+    "undici": "^8.12.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.2.0",
+    "prettier": "^3.9.10",
+    "vite": "^7.1.0"
+  },
+  "overrides": {
+    "readdir-glob": {
+      "minimatch": "^11.0.1"
+    }
+  }
+}
