@@ -48,3 +48,7 @@ A senha local e a marcação `.mobile-private` devem acompanhar o backup da past
 ## Continuidade na versão 3.2
 
 Depois de criar um lote de designs, é possível sair do editor ou fechar o app: a fila continua no servidor. Consulte a central de exportações para baixar os resultados ou repetir falhas. O APK usa download HTTP direto para esses ZIPs, evitando manter o arquivo inteiro na memória da WebView. O servidor precisa estar ligado; isso não transforma o processamento em edição offline.
+
+## Compilação Android 3.2.1
+
+O cliente Android recebeu versionCode 3 e download com nome versionado `Copex-Android-3.2.1.apk`; o servidor permanece na versão 3.2.0. O build explicita os esquemas de assinatura v1/v2/v3 e verifica assinatura para API 29 e API 36, além do alinhamento do APK. O certificado anterior é preservado. A integridade do ZIP e a leitura do manifesto foram verificadas. Um usuário relatou erro genérico de análise no Galaxy S23 FE com Android 16; a causa não foi reproduzida nem confirmada, e esta recompilação ainda precisa ser instalada nesse aparelho. Não se afirma que a assinatura era a causa.

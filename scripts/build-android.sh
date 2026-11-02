@@ -21,6 +21,8 @@ import zipfile
 with zipfile.ZipFile('.android-build/unsigned.apk','a',zipfile.ZIP_DEFLATED) as z:z.write('.android-build/dex/classes.dex','classes.dex')
 PY
 "$ANDROID_BUILD_TOOLS/zipalign" -f -p 4 "$build_dir/unsigned.apk" "$build_dir/aligned.apk"
-java -jar "$ANDROID_BUILD_TOOLS/lib/apksigner.jar" sign --v4-signing-enabled false --ks "$COPEX_ANDROID_KEYSTORE" --ks-pass "file:$COPEX_ANDROID_KEYSTORE_PASS_FILE" --ks-key-alias copex --out releases/Copex-Android.apk "$build_dir/aligned.apk"
-java -jar "$ANDROID_BUILD_TOOLS/lib/apksigner.jar" verify --verbose releases/Copex-Android.apk
+java -jar "$ANDROID_BUILD_TOOLS/lib/apksigner.jar" sign --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --v4-signing-enabled false --ks "$COPEX_ANDROID_KEYSTORE" --ks-pass "file:$COPEX_ANDROID_KEYSTORE_PASS_FILE" --ks-key-alias copex --out releases/Copex-Android.apk "$build_dir/aligned.apk"
+java -jar "$ANDROID_BUILD_TOOLS/lib/apksigner.jar" verify --verbose --min-sdk-version 29 releases/Copex-Android.apk
+java -jar "$ANDROID_BUILD_TOOLS/lib/apksigner.jar" verify --verbose --min-sdk-version 36 --max-sdk-version 36 releases/Copex-Android.apk
+"$ANDROID_BUILD_TOOLS/zipalign" -c -v 4 releases/Copex-Android.apk
 "$ANDROID_BUILD_TOOLS/aapt2" dump badging releases/Copex-Android.apk | head -8

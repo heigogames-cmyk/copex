@@ -240,7 +240,7 @@ public class MainActivity extends Activity {
     settings.setBuiltInZoomControls(false);
     settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     settings.setUserAgentString(
-      settings.getUserAgentString() + " CopexAndroid/3.2.0"
+      settings.getUserAgentString() + " CopexAndroid/3.2.1"
     );
     CookieManager.getInstance().setAcceptCookie(true);
     CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
