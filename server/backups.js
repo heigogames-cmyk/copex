@@ -136,6 +136,7 @@ function validateRecord(key, raw) {
       status,
       scheduledAt: null,
       publicMediaUrl: url(raw.publicMediaUrl),
+      hostedMedia: raw.hostedMedia === true,
       remoteId: raw.remoteId ? text(raw.remoteId) : null,
       url: url(raw.url),
       publishedAt: raw.publishedAt ? stamp(raw.publishedAt) : null,

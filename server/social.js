@@ -517,11 +517,22 @@ export async function registerSocial({
   assetPath,
   resolveMedia,
   client: providedClient,
+  createPublicMediaUrl,
 }) {
   db.plans ||= [];
   db.accounts ||= [];
   db.publications ||= [];
   db.socialSettings ||= { schedulerEnabled: false, publicBaseUrl: "" };
+  if (!db.socialSettings.publicBaseUrl) {
+    const configured =
+      process.env.COPEX_PUBLIC_URL || process.env.RENDER_EXTERNAL_URL;
+    if (configured) {
+      const u = new URL(configured);
+      if (u.protocol !== "https:" || u.username || u.password)
+        throw Error("URL pública do serviço inválida.");
+      db.socialSettings.publicBaseUrl = u.origin;
+    }
+  }
   const vault = await createVault(DATA),
     client = providedClient || createSocialClient();
   let busy = false;
@@ -573,6 +584,16 @@ export async function registerSocial({
     const media = await resolveMedia(p.media);
     if (media.type !== "video" || !media.file.endsWith(".mp4"))
       throw Error("Exporte um vídeo MP4 no editor antes de publicar.");
+    if (p.platform === "instagram" && p.hostedMedia && createPublicMediaUrl) {
+      if (!db.socialSettings.publicBaseUrl)
+        throw Error(
+          "Configure a base HTTPS pública antes de publicar no Instagram.",
+        );
+      p.publicMediaUrl = createPublicMediaUrl(
+        p,
+        db.socialSettings.publicBaseUrl,
+      );
+    }
     if (p.status === "failed" && !p.remoteId) {
       delete p.remotePublishId;
       delete p.remoteContainer;
@@ -790,6 +811,15 @@ export async function registerSocial({
         createdAt: new Date().toISOString(),
         attempts: 0,
       };
+      p.hostedMedia =
+        a.platform === "instagram" &&
+        !String(b.publicMediaUrl || "") &&
+        !!db.socialSettings.publicBaseUrl;
+      if (p.hostedMedia && createPublicMediaUrl)
+        p.publicMediaUrl = createPublicMediaUrl(
+          p,
+          db.socialSettings.publicBaseUrl,
+        );
       if (a.platform === "instagram" && !p.publicMediaUrl)
         throw Error(
           "Instagram precisa de uma URL pública de vídeo. Configure a base HTTPS ou informe o endereço do vídeo.",

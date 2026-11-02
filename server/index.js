@@ -1,3 +1,5 @@
+import { registerPublicMedia } from "./public-media.js";
+import { accessControl } from "./access.js";
 import { recoverJobs } from "./jobs.js";
 import { validateRecord } from "./records.js";
 import { registerDesigns } from "./designs.js";
@@ -65,6 +67,30 @@ function save() {
   return saving;
 }
 const app = express();
+const appVersion = JSON.parse(
+  await fs.readFile(path.join(ROOT, "package.json"), "utf8"),
+).version;
+app.get("/api/ready", (_req, res) =>
+  res.json({
+    ok: true,
+    app: "copex-studio",
+    version: appVersion,
+    androidClient: 1,
+  }),
+);
+const createPublicMediaUrl = await registerPublicMedia({
+  app,
+  db,
+  DATA,
+  wrap: (fn) => (req, res, next) =>
+    Promise.resolve(fn(req, res, next)).catch(next),
+  resolveMedia,
+});
+app.use(
+  accessControl(process.env.COPEX_ACCESS_PASSWORD, {
+    required: process.env.COPEX_REQUIRE_AUTH === "1",
+  }),
+);
 app.use(express.json({ limit: "12mb" }));
 for (const folder of ["uploads", "thumbs", "exports"])
   app.use(
@@ -300,6 +326,9 @@ app.get(
   wrap(async (req, res) => {
     res.json({
       ok: true,
+      app: "copex-studio",
+      version: appVersion,
+      androidClient: 1,
       ffmpeg: (await run("ffmpeg", ["-version"])).split("\n")[0],
       storage: DATA,
     });
@@ -948,6 +977,7 @@ const social = await registerSocial({
   DATA,
   assetPath,
   resolveMedia,
+  createPublicMediaUrl,
 });
 async function runRecipe(rule, manual = false) {
   const processed = rule.processed || [],

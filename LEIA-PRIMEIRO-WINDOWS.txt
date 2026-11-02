@@ -12,7 +12,7 @@ Pode ser necessário reiniciar o computador. Depois abra "Ubuntu" no menu Inicia
 Crie o nome de usuário e a senha que o Ubuntu solicitar. Ao digitar a senha, nenhum caractere aparece: é normal.
 Quando o Ubuntu estiver pronto, execute INICIAR-COPEX.cmd novamente.
 Se pedir "[sudo] password", use a senha que você criou no Ubuntu, não necessariamente a senha do Windows.
-É necessária internet na preparação inicial. FFmpeg, fontes, Node.js 24 e dependências serão instalados no Ubuntu.
+É necessária internet na preparação inicial. FFmpeg, fontes, Node.js 24, Python e dependências serão instalados no Ubuntu.
 
 PARA USAR DEPOIS
 Dê dois cliques em INICIAR-COPEX.cmd e mantenha a janela aberta.
@@ -28,9 +28,15 @@ Este iniciador abre uma instalação local, não publica um site na internet.
 
 LEGENDAS E REDES SOCIAIS
 Edição, templates e exportação funcionam sem contas sociais.
-O iniciador não instala o modelo Whisper nem conecta suas contas: essas funções continuam exigindo preparação própria.
+O iniciador prepara o motor e baixa o modelo oficial de voz em segundo plano quando necessário. O download exige acesso à Hugging Face. Se falhar, confira Legendas automáticas e o arquivo .data/model-install.log. Suas contas sociais exigem autorização dos provedores.
 
 SE DER ERRO
 Tire uma foto/captura da janela com a mensagem e envie no chat.
 Não foi possível executar o trecho PowerShell em uma máquina Windows nesta entrega.
 O fluxo Linux e o servidor foram testados no ambiente de desenvolvimento.
+
+ATUALIZAÇÕES
+Feche a janela do Copex antigo antes de abrir o iniciador de uma nova versão. O iniciador conserva os dados salvos no Ubuntu.
+
+ANDROID E USO SEM PC
+O aplicativo Android está disponível separadamente no GitHub. Para usá-lo sem depender do PC ligado, é necessário ativar a hospedagem descrita em docs/DEPLOY.md. O APK não contém um servidor online contratado.

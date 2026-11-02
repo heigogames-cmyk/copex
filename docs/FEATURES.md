@@ -1,4 +1,4 @@
-# Funcionalidades — Copex Studio 3.0
+# Funcionalidades — Copex Studio 3.1
 
 A referência disponível é a gravação enviada pelo usuário. O acesso direto à Velyra continua bloqueado pelo proxy. A implementação é independente e não reproduz código ou algoritmos proprietários.
 
@@ -48,3 +48,7 @@ O código desses módulos está implementado. A ativação e a validação real 
 ## Revisão visual e de continuidade da versão 3
 
 Identidade vetorial original e tema editorial; layouts conferidos entre 320 e 1280 px sem rolagem horizontal nas telas principais. Projetos são atualizados no mesmo registro e cópias são explícitas. Rascunhos de lote/design e CSV recuperam o trabalho neste navegador. Busca global, navegação pelo histórico, atalhos e foco dos diálogos foram testados. Veja as capturas em `docs/` e os testes específicos em `tests/polish.spec.js`.
+
+## Android e hospedagem — 3.1
+
+APK Android 10+, mesma interface e servidor do PC. Controles de camadas e CSV expostos em telas pequenas; upload múltiplo e downloads Blob/HTTP tratados pelo cliente. Docker e blueprint de hospedagem privada com senha e disco persistente preparados. Não há serviço online ativado. Ver [ANDROID.md](ANDROID.md) e [DEPLOY.md](DEPLOY.md).

@@ -15,18 +15,19 @@ open_browser() {
   fi
 }
 need_system=false
-for tool in ffmpeg ffprobe curl tar xz sha256sum; do
+for tool in ffmpeg ffprobe curl tar xz sha256sum python3; do
   command -v "$tool" >/dev/null 2>&1 || need_system=true
 done
 test -r /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf || need_system=true
+python3 -c 'import ensurepip' >/dev/null 2>&1 || need_system=true
 if $need_system; then
   echo 'Instalando FFmpeg e fontes no Ubuntu. Pode pedir sua senha do Ubuntu.'
   if ((EUID == 0)); then
     apt-get update
-    apt-get install -y ffmpeg curl ca-certificates xz-utils fonts-dejavu-core
+    apt-get install -y ffmpeg curl ca-certificates xz-utils fonts-dejavu-core python3 python3-venv
   else
     sudo apt-get update
-    sudo apt-get install -y ffmpeg curl ca-certificates xz-utils fonts-dejavu-core
+    sudo apt-get install -y ffmpeg curl ca-certificates xz-utils fonts-dejavu-core python3 python3-venv
   fi
 fi
 if ! command -v npm >/dev/null 2>&1 || ! command -v node >/dev/null 2>&1 || ! node -e 'if(Number(process.versions.node.split(".")[0])<24)process.exit(1)' 2>/dev/null; then
@@ -48,12 +49,18 @@ if ! command -v npm >/dev/null 2>&1 || ! command -v node >/dev/null 2>&1 || ! no
   trap - EXIT
 fi
 node --version
-# Reuse only an actual Copex server, never an unrelated service on this port.
-if node --input-type=module -e 'const r=await fetch("http://127.0.0.1:"+process.argv[1]+"/api/state",{signal:AbortSignal.timeout(1500)});const s=await r.json();if(!r.ok||!Array.isArray(s.assets)||!Array.isArray(s.jobs)||!s.defaults)process.exit(1)' "$port" >/dev/null 2>&1; then
+# Reuse the matching version; do not silently leave an old server running.
+existing_version="$(node --input-type=module -e 'const base="http://127.0.0.1:"+process.argv[1];let r=await fetch(base+"/api/ready",{signal:AbortSignal.timeout(1500)});if(r.ok){const s=await r.json();if(s.app==="copex-studio")console.log(s.version||"anterior");}else{r=await fetch(base+"/api/health",{signal:AbortSignal.timeout(1500)});const s=await r.json();if(r.ok&&s.ok&&s.ffmpeg)console.log(s.version||"anterior");}' "$port" 2>/dev/null || true)"
+if [[ -n "$existing_version" ]]; then
+  source_version="$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).version' "$source_root/package.json")"
+  if [[ "$existing_version" != "$source_version" ]]; then
+    echo 'Uma versao anterior do Copex esta aberta. Feche a janela antiga do Copex e abra este iniciador novamente.' >&2
+    exit 1
+  fi
   echo 'O Copex ja esta aberto neste computador.'; open_browser; exit 0
 fi
 mkdir -p "$app_dir"
-for item in package.json package-lock.json server shared scripts public dist; do
+for item in package.json package-lock.json requirements-tools.txt server shared scripts public dist; do
   test -e "$source_root/$item" || { echo "Arquivo ausente: $item. Extraia o ZIP inteiro antes de abrir." >&2; exit 1; }
   cp -R -- "$source_root/$item" "$app_dir/"
 done
@@ -65,11 +72,31 @@ if [[ ! -d node_modules || "$installed_hash" != "$lock_hash" ]]; then
   npm ci --omit=dev --no-audit --no-fund --cache "$app_dir/.npm-cache"
   printf '%s\n' "$lock_hash" > .installed-lock.sha256
 fi
+if ! python3 -c 'import sys; assert sys.version_info >= (3,12)' >/dev/null 2>&1; then
+  echo 'Para todas as ferramentas, use Ubuntu atualizado com Python 3.12 ou superior.' >&2
+  exit 1
+fi
+python_hash="$(sha256sum requirements-tools.txt | cut -d ' ' -f 1)"
+installed_python="$(cat .installed-python.sha256 2>/dev/null || true)"
+if [[ ! -x .tools/bin/python || "$installed_python" != "$python_hash" ]]; then
+  echo 'Preparando importacao e transcricao. A primeira vez pode demorar alguns minutos...'
+  python3 -m venv .tools
+  .tools/bin/python -m pip install --disable-pip-version-check -r requirements-tools.txt
+  .tools/bin/python -m pip check
+  printf '%s\n' "$python_hash" > .installed-python.sha256
+fi
+model_pid=""
+if [[ "${COPEX_INSTALL_MODEL:-1}" == 1 ]] && { [[ ! -f .data/models/whisper/model.bin ]] || [[ ! -f .data/models/whisper/config.json ]] || [[ ! -f .data/models/whisper/tokenizer.json ]]; }; then
+  mkdir -p .data/models
+  echo 'Preparando o modelo oficial de voz em segundo plano. As outras ferramentas ja podem abrir.'
+  timeout 600 .tools/bin/python scripts/install-model.py --destination .data/models/whisper > .data/model-install.log 2>&1 &
+  model_pid=$!
+fi
 echo 'Iniciando. Mantenha esta janela aberta enquanto usa o Copex.'
 export NODE_ENV=production PORT="$port"
 node server/index.js &
 server_pid=$!
-trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+trap 'kill "$server_pid" 2>/dev/null || true; if [[ -n "$model_pid" ]]; then kill "$model_pid" 2>/dev/null || true; fi' EXIT
 trap 'exit 130' INT TERM
 ready=false
 for ((attempt=0; attempt<120; attempt++)); do

@@ -4099,3 +4099,79 @@ textarea:focus {
     letter-spacing: 0;
   }
 }
+
+/* Phone editors expose the same controls as desktop. */
+@media (max-width: 760px) {
+  .design-overlay {
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .design-header {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    background: #171e14;
+  }
+  .design-left > .settings-section,
+  .design-left > .design-bottom {
+    display: block;
+  }
+  .design-left > .layers {
+    display: block;
+    max-height: 210px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .design-left .layer {
+    min-height: 44px;
+  }
+  .design-left .layer > .icon-btn,
+  .design-right .icon-btn,
+  .canvas-toolbar .text-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .design-bottom {
+    margin-top: 14px;
+  }
+  .design-bottom > .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+  .design-layout {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+  }
+  .design-workspace,
+  .design-left,
+  .design-right {
+    min-width: 0;
+  }
+  .design-workspace {
+    min-height: 360px;
+  }
+  .canvas-area {
+    min-height: 300px !important;
+  }
+  .csv-panel {
+    max-height: none;
+    overflow: visible;
+  }
+  .csv-panel > .row {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .csv-panel .btn {
+    min-height: 44px;
+  }
+  .csv-panel textarea {
+    font-size: 16px;
+  }
+  .design-right input,
+  .design-right select,
+  .design-right textarea {
+    font-size: 16px !important;
+  }
+}

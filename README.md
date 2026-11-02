@@ -1,12 +1,20 @@
-# Copex Studio 3.0.1
+# Copex Studio 3.1.0 — PC e Android
 
 Estúdio de criação para uso individual, sem login, assinatura ou cotas comerciais. O foco é preparar vídeos em lote e reutilizar templates. Implementação independente, orientada pelas telas da gravação fornecida; não utiliza código, identidade visual ou serviços internos da plataforma de referência.
+
+## Aplicativo Android e uso online
+
+[Baixar APK Android 10+](https://github.com/heigogames-cmyk/copex/raw/refs/heads/entrega-windows-20261102/releases/Copex-Android.apk) · [Guia do aplicativo](docs/ANDROID.md) · [Hospedagem privada](docs/DEPLOY.md)
+
+O APK acessa o mesmo servidor que a interface do PC: biblioteca, edição em lote, templates, design com camadas/CSV, cortes, legendas, radar, receitas, publicação, calendário e resultados. Os controles de camadas e CSV também ficam visíveis no celular. Upload múltiplo, downloads de mídia e salvamento dos arquivos gerados no navegador são tratados pelo aplicativo. O processamento permanece no servidor.
+
+Para usar sem PC ligado é necessário ativar uma hospedagem. A imagem Docker foi construída e testada com senha, processamento real e disco persistente. `render.yaml` prepara um serviço HTTPS privado com disco e senha gerada pelo provedor. O plano do provedor é pago; nenhuma conta ou cobrança foi criada nesta entrega. Não há hospedagem pública ativa nem URL de servidor já configurada no APK.
 
 ## Abrir no Windows
 
 Extraia o ZIP inteiro, abra a pasta `copex-studio` e execute `INICIAR-COPEX.cmd`. O iniciador oferece a instalação oficial do Ubuntu/WSL quando necessário e usa esse ambiente para preparar Node.js 24, FFmpeg, fontes e dependências. A primeira execução pode exigir permissão de administrador, reinicialização e criação de usuário/senha no Ubuntu. As instruções completas estão em `LEIA-PRIMEIRO-WINDOWS.txt`.
 
-Depois da preparação, abre o navegador em `http://localhost:3001`. Mantenha a janela aberta. Dados locais ficam em `~/.local/share/copex-studio/.data` dentro do Ubuntu; a extração do ZIP não transfere os dados deste ambiente na nuvem. O instalador de Python/Whisper e as contas sociais continuam sendo preparações separadas.
+Depois da preparação, abre o navegador em `http://localhost:3001`. Mantenha a janela aberta. Dados locais ficam em `~/.local/share/copex-studio/.data` dentro do Ubuntu; a extração do ZIP não transfere os dados deste ambiente na nuvem. O iniciador prepara as ferramentas Python e solicita o modelo oficial de voz em segundo plano na primeira execução; as contas sociais continuam exigindo autorização dos provedores.
 
 A parte Linux do iniciador foi executada em cópia isolada, com instalação de dependências, upload, exportação WebP com texto, ZIP e interface no Chromium. O trecho PowerShell/WSL não pôde ser executado em um Windows real nesta entrega.
 
@@ -100,7 +108,7 @@ As versões das dependências Python também estão fixadas. O importador usa yt
 
 - **Radar de conteúdo:** consulta de vídeo ou perfil público; importação de CSV/JSON; filtros por alcance, curtidas, duração e índice relativo; seleção e download em lote; CSV dos resultados. Campos desconhecidos ficam sem valor. Não é uma previsão de viralidade.
 - **Cortes inteligentes:** usa mudanças de cena e pausas detectadas pelo FFmpeg. Ajuste as durações, revise os trechos, aplique um template e exporte todos em um ZIP. O índice de continuidade audiovisual não avalia o significado das falas.
-- **Legendas automáticas:** motor faster-whisper instalado, processamento em CPU/int8 com duas threads e revisão de texto/tempos. A transcrição usa apenas pesos locais; não baixa modelos implicitamente.
+- **Legendas automáticas:** motor faster-whisper instalado, processamento em CPU/int8 com duas threads e revisão de texto/tempos. A transcrição usa pesos locais. O iniciador Windows e o blueprint de hospedagem podem preparar o modelo na inicialização; executar apenas `npm start` não inicia downloads de modelos.
 
 Para instalar o modelo oficial quando a rede permitir:
 

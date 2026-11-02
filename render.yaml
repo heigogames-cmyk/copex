@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: copex-studio
+    runtime: docker
+    branch: entrega-windows-20261102
+    plan: standard
+    region: virginia
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/ready
+    autoDeployTrigger: "off"
+    disk:
+      name: copex-data
+      mountPath: /var/lib/copex
+      sizeGB: 20
+    envVars:
+      - key: COPEX_ACCESS_PASSWORD
+        generateValue: true
+      - key: COPEX_REQUIRE_AUTH
+        value: "1"
+      - key: COPEX_DATA_DIR
+        value: /var/lib/copex
+      - key: COPEX_INSTALL_MODEL
+        value: "1"
+      - key: PORT
+        value: "3001"

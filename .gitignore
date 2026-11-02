@@ -6,3 +6,11 @@ playwright-report/
 *.log
 
 .tools/
+
+.android-build/
+.android-sdk/
+*.keystore
+*.p12
+
+.env*
+!.env.example

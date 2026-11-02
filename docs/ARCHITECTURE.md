@@ -1,4 +1,4 @@
-# Arquitetura — versão 3
+# Arquitetura — versão 3.1
 
 ## Módulos
 
@@ -54,3 +54,7 @@ Os contratos foram testados por injeção de transporte com respostas controlada
 ## Iniciar e verificar
 
 Use o checkout existente em `/workspace/copex`, sem criar worktrees para inicialização. `npm run dev` inicia API e Vite. `npm run build && npm start` serve a produção na porta 3001. `npm test` cobre lógica/FFmpeg/adaptadores e `npm run test:e2e` usa Chromium e porta 3002 com dados temporários exclusivos.
+
+## Cliente Android e hospedagem
+
+`android/src/com/copex/studio` contém o cliente WebView, políticas de origem e integração com seletores/downloads nativos. Não inclui o backend nem processamento offline. `android/assets/downloads.js` encaminha blobs em blocos para salvamento pelo Android. `server/access.js` fornece acesso privado opcional ao estúdio inteiro; `Dockerfile` exige senha no modo online. `render.yaml` configura HTTPS do provedor e disco durável; `scripts/start-container.sh` prepara permissões, reduz privilégios e pode instalar o modelo oficial em segundo plano. O cliente Android e o navegador de PC usam a mesma API e banco quando configurados para o mesmo servidor.

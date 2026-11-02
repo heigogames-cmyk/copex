@@ -3091,7 +3091,7 @@ function SettingsPage({ state, mutate, notify }) {
         <section className="panel settings-card">
           <h2>Sobre o Copex Studio</h2>
           <div className="version">
-            3.0.1 <span>INDEPENDENT STUDIO EDITION</span>
+            3.1.0 <span>INDEPENDENT STUDIO EDITION</span>
           </div>
           <p>
             Uso individual, sem login, planos ou cotas comerciais. O
