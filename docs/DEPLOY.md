@@ -29,3 +29,7 @@ Conta/ativação da hospedagem, download do modelo e autorizações sociais não
 ## Vídeos para Instagram com o estúdio privado
 
 Quando a publicação usa a mídia hospedada pelo próprio Copex, a integração recebe um link assinado para um único vídeo, válido por até 24 horas. O link é renovado ao iniciar o envio, inclusive após agendamento. Só funciona enquanto a publicação estiver enviando, processando, incerta ou publicada; cancelá-la invalida o acesso. A biblioteca e os demais arquivos continuam atrás da senha. Links explicitamente informados para hospedagens externas permanecem externos. No Render, a base HTTPS é obtida de `RENDER_EXTERNAL_URL` automaticamente. Em outros provedores, configure `COPEX_PUBLIC_URL` ou a base pela interface. A chave de assinatura fica no diretório privado e deve acompanhar o backup completo.
+
+## Usar o PC enquanto a hospedagem não é ativada
+
+O pacote Windows inclui `CONECTAR-CELULAR.cmd` para preparar acesso privado pela rede de casa. Ele exige servidor atualizado com senha e encaminha somente a porta local necessária, limitada no firewall ao perfil privado e à sub-rede local. Não exige assinatura de hospedagem; o PC precisa continuar ligado. Consulte [ANDROID.md](ANDROID.md). Migrar para uma hospedagem nova não transfere arquivos automaticamente: faça backup completo dos dados e restaure no novo servidor.

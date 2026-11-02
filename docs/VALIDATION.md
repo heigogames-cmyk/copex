@@ -1,6 +1,6 @@
 # Validação da versão 3.1.0
 
-Em 2 de novembro de 2026: **42 testes Node e 33 testes Playwright passaram (75 no total)**, sem casos ignorados. Build de produção concluído. Além disso, APK compilado e assinatura verificada, regras Java testadas, Docker construído e processamento real validado em contêiner privado com disco persistente. Veja [Android](ANDROID.md) e [hospedagem](DEPLOY.md) para evidências e limites. O APK não foi executado em Android real; as integrações externas não foram validadas ao vivo.
+Em 2 de novembro de 2026: **43 testes Node e 33 testes Playwright passaram (76 no total)**, sem casos ignorados. Build de produção concluído. Além disso, APK compilado e assinatura verificada, regras Java testadas, Docker construído e processamento real validado em contêiner privado com disco persistente. Veja [Android](ANDROID.md) e [hospedagem](DEPLOY.md) para evidências e limites. O APK não foi executado em Android real; as integrações externas não foram validadas ao vivo.
 
 Links temporários do Instagram foram testados quanto a expiração, alteração de assinatura/referência, estado da publicação e leitura HTTP Range sem liberar as demais rotas privadas.
 

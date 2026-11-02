@@ -130,3 +130,39 @@ test("signed media serves only an active Instagram video, supports ranges and le
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test("local mobile setup preserves its password, strips Windows line endings and restricts the file", async () => {
+  const fs = await import("node:fs/promises");
+  const path = await import("node:path");
+  const os = await import("node:os");
+  const { spawnSync } = await import("node:child_process");
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "copex-local-password-"));
+  try {
+    const options = {
+      env: { ...process.env, COPEX_WINDOWS_APP_DIR: dir },
+      encoding: "utf8",
+    };
+    let r = spawnSync("sh", ["scripts/mobile-secret.sh"], {
+      ...options,
+      input: "test-only-secret\r\n",
+    });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, "test-only-secret");
+    r = spawnSync("sh", ["scripts/mobile-secret.sh"], {
+      ...options,
+      input: "different\r\n",
+    });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, "test-only-secret");
+    assert.equal(
+      (await fs.stat(path.join(dir, ".access-password"))).mode & 0o777,
+      0o600,
+    );
+    assert.equal(
+      await fs.readFile(path.join(dir, ".mobile-private"), "utf8"),
+      "1",
+    );
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

@@ -93,6 +93,8 @@ if [[ "${COPEX_INSTALL_MODEL:-1}" == 1 ]] && { [[ ! -f .data/models/whisper/mode
   model_pid=$!
 fi
 echo 'Iniciando. Mantenha esta janela aberta enquanto usa o Copex.'
+if [[ -s .access-password ]]; then export COPEX_ACCESS_PASSWORD="$(tr -d '\r\n' < .access-password)"; fi
+if [[ -f .mobile-private || -s .access-password ]]; then export COPEX_REQUIRE_AUTH=1; fi
 export NODE_ENV=production PORT="$port"
 node server/index.js &
 server_pid=$!
@@ -101,7 +103,7 @@ trap 'exit 130' INT TERM
 ready=false
 for ((attempt=0; attempt<120; attempt++)); do
   if ! kill -0 "$server_pid" 2>/dev/null; then wait "$server_pid"; exit 1; fi
-  if curl --fail --silent --max-time 2 "http://127.0.0.1:$port/api/health" >/dev/null; then ready=true; break; fi
+  if curl --fail --silent --max-time 2 "http://127.0.0.1:$port/api/ready" >/dev/null; then ready=true; break; fi
   sleep 1
 done
 if ! $ready; then echo 'O servidor nao respondeu. Envie uma foto desta janela para receber ajuda.' >&2; exit 1; fi

@@ -76,6 +76,7 @@ app.get("/api/ready", (_req, res) =>
     app: "copex-studio",
     version: appVersion,
     androidClient: 1,
+    privateAccess: !!process.env.COPEX_ACCESS_PASSWORD,
   }),
 );
 const createPublicMediaUrl = await registerPublicMedia({

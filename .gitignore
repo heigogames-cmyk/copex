@@ -14,3 +14,7 @@ playwright-report/
 
 .env*
 !.env.example
+
+.access-password
+
+.mobile-private

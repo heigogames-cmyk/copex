@@ -8,7 +8,7 @@ Estúdio de criação para uso individual, sem login, assinatura ou cotas comerc
 
 O APK acessa o mesmo servidor que a interface do PC: biblioteca, edição em lote, templates, design com camadas/CSV, cortes, legendas, radar, receitas, publicação, calendário e resultados. Os controles de camadas e CSV também ficam visíveis no celular. Upload múltiplo, downloads de mídia e salvamento dos arquivos gerados no navegador são tratados pelo aplicativo. O processamento permanece no servidor.
 
-Para usar sem PC ligado é necessário ativar uma hospedagem. A imagem Docker foi construída e testada com senha, processamento real e disco persistente. `render.yaml` prepara um serviço HTTPS privado com disco e senha gerada pelo provedor. O plano do provedor é pago; nenhuma conta ou cobrança foi criada nesta entrega. Não há hospedagem pública ativa nem URL de servidor já configurada no APK.
+Para usar com o PC ligado, o pacote Windows inclui `CONECTAR-CELULAR.cmd`, que prepara a conexão privada pela rede de casa e mostra os dados para o Android. Para usar sem PC ligado é necessário ativar uma hospedagem. A imagem Docker foi construída e testada com senha, processamento real e disco persistente. `render.yaml` prepara um serviço HTTPS privado com disco e senha gerada pelo provedor. O plano do provedor é pago; nenhuma conta ou cobrança foi criada nesta entrega. Não há hospedagem pública ativa nem URL de servidor já configurada no APK.
 
 ## Abrir no Windows
 

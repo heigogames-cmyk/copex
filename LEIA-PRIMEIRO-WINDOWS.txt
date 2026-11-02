@@ -40,3 +40,6 @@ Feche a janela do Copex antigo antes de abrir o iniciador de uma nova versão. O
 
 ANDROID E USO SEM PC
 O aplicativo Android está disponível separadamente no GitHub. Para usá-lo sem depender do PC ligado, é necessário ativar a hospedagem descrita em docs/DEPLOY.md. O APK não contém um servidor online contratado.
+
+CONECTAR O CELULAR SEM HOSPEDAGEM
+Instale o APK Android e execute CONECTAR-CELULAR.cmd no PC. Na primeira vez ele prepara uma senha: feche o Copex antigo, abra INICIAR-COPEX.cmd deste pacote novo e execute CONECTAR-CELULAR.cmd novamente. Ele mostra o endereco local, usuario copex e a senha. O PC deve continuar ligado e ambos os aparelhos devem usar a mesma rede privada de casa. O script pede permissao do Windows para encaminhar a porta do WSL e liberar somente a rede local privada no firewall. Nao abre portas no roteador. Detalhes em docs/ANDROID.md.

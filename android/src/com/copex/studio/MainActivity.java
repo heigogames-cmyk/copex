@@ -305,12 +305,25 @@ public class MainActivity extends Activity {
           EditText user = new EditText(MainActivity.this),
             pass = new EditText(MainActivity.this);
           user.setHint("Usuário do servidor");
-          pass.setHint("Senha de acesso");
+          user.setText("copex");
+          user.setSelectAllOnFocus(true);
+          pass.setHint("Senha do Copex");
           pass.setInputType(
             InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
           );
           form.addView(user);
           form.addView(pass);
+          CheckBox showPassword = new CheckBox(MainActivity.this);
+          showPassword.setText("Mostrar senha");
+          showPassword.setOnCheckedChangeListener((button, checked) -> {
+            pass.setTransformationMethod(
+              checked
+                ? null
+                : android.text.method.PasswordTransformationMethod.getInstance()
+            );
+            pass.setSelection(pass.getText().length());
+          });
+          form.addView(showPassword);
           new AlertDialog.Builder(MainActivity.this)
             .setTitle("Acesso ao seu servidor")
             .setView(form)
