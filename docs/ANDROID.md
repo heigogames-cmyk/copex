@@ -52,3 +52,11 @@ Depois de criar um lote de designs, é possível sair do editor ou fechar o app:
 ## Compilação Android 3.2.1
 
 O cliente Android recebeu versionCode 3 e download com nome versionado `Copex-Android-3.2.1.apk`; o servidor permanece na versão 3.2.0. O build explicita os esquemas de assinatura v1/v2/v3 e verifica assinatura para API 29 e API 36, além do alinhamento do APK. O certificado anterior é preservado. A integridade do ZIP e a leitura do manifesto foram verificadas. Um usuário relatou erro genérico de análise no Galaxy S23 FE com Android 16; a causa não foi reproduzida nem confirmada, e esta recompilação ainda precisa ser instalada nesse aparelho. Não se afirma que a assinatura era a causa.
+
+## Diagnostico de instalacao no Samsung
+
+O APK 3.2.1 foi instalado com `adb install -r` na imagem oficial Google ATD x86_64 API 36 (Android 16): resultado `Success`. A abertura via `am start -W` retornou `Status: ok`, atividade `com.copex.studio/.MainActivity` e processo ativo. O emulador rodou sem KVM e apresentou lentidao/ANR do proprio sistema; esse teste comprova instalacao e inicio da atividade, mas nao valida a experiencia visual nem reproduz o instalador Samsung. O erro generico relatado no Galaxy S23 FE continua sem causa confirmada.
+
+O arquivo separado `releases/Copex-Android-USB.zip` inclui o mesmo APK assinado, `INSTALAR-ANDROID-USB.cmd`, o auxiliar PowerShell e instrucoes. Execute no Windows com o telefone conectado por cabo de dados. O auxiliar baixa Platform Tools oficiais do Google com SHA-256 fixado, valida o APK e tenta a instalacao via gerenciador de pacotes do telefone. O usuario precisa ativar e autorizar Depuracao USB no proprio celular. Nenhuma senha do Copex e solicitada. O programa aceita somente um aparelho USB autorizado, ignora emuladores/conexoes TCP e nao desinstala apps nem limpa dados. Falhas abrem um relatorio com o motivo tecnico, modelo e versao, sem o numero de serie.
+
+Sintaxe PowerShell verificada e quatro fluxos executados com transporte ADB controlado: sucesso, recusa do Android, aparelho nao autorizado e multiplos aparelhos. A recusa preserva a mensagem tecnica; casos ambiguos nao tentam instalar. O auxiliar completo ainda precisa ser executado no Windows e no S23 FE reais.
