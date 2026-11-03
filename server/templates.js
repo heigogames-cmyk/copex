@@ -27,6 +27,9 @@ export function validateTemplate(input) {
     return {
       ...common,
       kind: "video",
+      ...(input.sourceAssetId
+        ? { sourceAssetId: String(input.sourceAssetId).slice(0, 120) }
+        : {}),
       settings: normalizeSettings(input.settings || {}),
     };
   const doc = input.doc;
@@ -178,6 +181,12 @@ export function registerTemplates({
             );
             template.settings[key] = "";
           }
+      if (template.sourceAssetId) {
+        delete template.sourceAssetId;
+        warnings.push(
+          "O vídeo-base não é incorporado ao JSON. Importe o vídeo da galeria no outro servidor.",
+        );
+      }
       const bundle = {
         format: "copex-template",
         version: 1,
@@ -275,6 +284,15 @@ export function registerTemplates({
                 "Selecione novamente os arquivos de marca, áudio ou legenda.",
               );
             }
+        if (
+          template.sourceAssetId &&
+          !db.assets.some(
+            (a) => a.id === template.sourceAssetId && a.type === "video",
+          )
+        ) {
+          delete template.sourceAssetId;
+          warnings.push("O vídeo-base precisa ser importado da galeria.");
+        }
         const saved = {
           ...template,
           id: randomUUID(),

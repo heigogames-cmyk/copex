@@ -1,3 +1,9 @@
+# Galeria — versão 3.2.2
+
+**50 testes Node e 46 testes Playwright passaram (96 no total)**, sem casos ignorados. Os dois novos testes móveis importam imagem e vídeo reais pelo catálogo. A imagem vira design salvo, é renderizada e tem seus pixels conferidos. O vídeo fica vinculado ao preset, abre selecionado no editor e pode ser reutilizado pelo catálogo; backup conserva a referência e JSON portátil informa que a mídia deve ser transferida separadamente. Build de produção concluído. Atualização do servidor necessária; o APK 3.2.1 continua compatível.
+
+---
+
 # Validação da versão 3.2.0
 
 Em 2 de novembro de 2026: **50 testes Node e 44 testes Playwright passaram (94 no total)**, sem casos ignorados. Os testes novos cobrem fila persistente de designs, saída parcial, cancelamento, recuperação de imagens, repetição e correção de linhas, CSV/formato entre aparelhos, favoritos no servidor, download Android por HTTP, atualização do estado do modelo, redução de ruído real e exclusão protegida de exportações.

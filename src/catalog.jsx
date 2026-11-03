@@ -207,6 +207,103 @@ export function TemplateLibrary({
     if (!file) return;
     setBusy(true);
     try {
+      const image =
+        /^image\/(png|jpeg|webp)$/i.test(file.type) ||
+        /\.(png|jpe?g|webp)$/i.test(file.name);
+      const video =
+        /^video\//i.test(file.type) ||
+        /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name);
+      if (image || video) {
+        if (image && file.size > 50 * 1024 * 1024)
+          throw Error("A imagem deve ter até 50 MB.");
+        const form = new FormData();
+        form.append("files", file);
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: form,
+        });
+        const uploaded = await response.json();
+        if (!response.ok)
+          throw Error(uploaded.error || "Não foi possível importar o arquivo.");
+        const asset = uploaded.assets?.find(
+          (a) => a.type === (video ? "video" : "image"),
+        );
+        if (!asset)
+          throw Error(
+            uploaded.errors?.[0]?.error ||
+              (video
+                ? "Use um vídeo válido, como MP4, MOV ou WebM."
+                : "Use uma imagem PNG, JPG ou WebP válida."),
+          );
+        const name =
+          file.name.replace(/\.[^.]+$/, "").slice(0, 120) ||
+          "Template da galeria";
+        if (video) {
+          const saved = await mutate("/presets", "POST", {
+            kind: "video",
+            name,
+            category: "Meus templates",
+            sourceAssetId: asset.id,
+            settings: {
+              width: Math.max(128, Math.min(4096, asset.width)),
+              height: Math.max(128, Math.min(4096, asset.height)),
+            },
+          });
+          if (saved) {
+            setKind("Vídeo");
+            setTab("Meus templates");
+            setQuery("");
+            applyPreset(saved, asset);
+          }
+          return;
+        }
+        const factor = Math.min(1, 4096 / Math.max(asset.width, asset.height));
+        const width = Math.max(128, Math.round(asset.width * factor));
+        const height = Math.max(128, Math.round(asset.height * factor));
+        const fit = Math.min(width / asset.width, height / asset.height);
+        const imageWidth = asset.width * fit,
+          imageHeight = asset.height * fit;
+        const saved = await mutate("/presets", "POST", {
+          kind: "design",
+          name,
+          category: "Meus templates",
+          doc: {
+            name,
+            width,
+            height,
+            background: "#ffffff",
+            elements: [
+              {
+                id: "base-image",
+                type: "image",
+                assetId: asset.id,
+                x: (width - imageWidth) / 2,
+                y: (height - imageHeight) / 2,
+                width: imageWidth,
+                height: imageHeight,
+                locked: true,
+              },
+            ],
+          },
+        });
+        if (saved) {
+          setKind("Design");
+          setTab("Meus templates");
+          setQuery("");
+          notify(
+            "Imagem salva como template. A arte é uma camada única; adicione textos e outras camadas por cima.",
+          );
+          setDesign({ ...saved.doc, id: saved.id, saved: true });
+        }
+        return;
+      }
+      if (
+        !/\.json$/i.test(file.name) &&
+        !/^(application|text)\/(json|plain)$/i.test(file.type)
+      )
+        throw Error(
+          "Escolha uma imagem, um vídeo da galeria ou um template .copex.json.",
+        );
       if (file.size > 12 * 1024 * 1024)
         throw Error("O arquivo do template deve ter até 12 MB.");
       const content = JSON.parse(await file.text());
@@ -223,7 +320,7 @@ export function TemplateLibrary({
     } catch (e) {
       notify(
         e instanceof SyntaxError
-          ? "Este arquivo não é um JSON válido."
+          ? "O arquivo JSON está inválido. Você também pode importar uma imagem PNG, JPG ou WebP."
           : e.message,
         "error",
       );
@@ -236,7 +333,8 @@ export function TemplateLibrary({
     <>
       <input
         type="file"
-        accept=".json"
+        accept=".json,.png,.jpg,.jpeg,.webp,.mp4,.mov,.m4v,.webm,.mkv,.avi,application/json,image/png,image/jpeg,image/webp,video/*"
+        aria-label="Importar template ou imagem"
         hidden
         ref={input}
         onChange={importFile}
@@ -370,7 +468,11 @@ export function TemplateLibrary({
             kind === "Vídeo" ? (
               <Card
                 key={p.id}
-                preset={p}
+                preset={{
+                  ...p,
+                  thumbnail: state.assets.find((a) => a.id === p.sourceAssetId)
+                    ?.thumbnail,
+                }}
                 index={videos.findIndex((v) => v.id === p.id)}
                 onClick={() => applyPreset(p)}
                 actions={actions(p)}
@@ -383,14 +485,21 @@ export function TemplateLibrary({
                 >
                   <img
                     src={
+                      state.assets.find(
+                        (a) =>
+                          a.id ===
+                          p.elements?.find(
+                            (e) => e.type === "image" && !e.hidden,
+                          )?.assetId,
+                      )?.thumbnail ||
                       "data:image/svg+xml;charset=utf-8," +
-                      encodeURIComponent(
-                        templateSVG(p, {
-                          titulo: "Novo drop.",
-                          subtitulo: "O extraordinário chegou.",
-                          cta: "DESCUBRA AGORA →",
-                        }),
-                      )
+                        encodeURIComponent(
+                          templateSVG(p, {
+                            titulo: "Novo drop.",
+                            subtitulo: "O extraordinário chegou.",
+                            cta: "DESCUBRA AGORA →",
+                          }),
+                        )
                     }
                     alt={p.name}
                   />
@@ -420,9 +529,12 @@ export function TemplateLibrary({
         <div>
           <b>Feito uma vez. Reimaginado quantas vezes quiser.</b>
           <p>
-            Exporte seus templates em JSON para guardar ou compartilhar. Imagens
-            dos designs acompanham o arquivo; trilhas e legendas dos presets de
-            vídeo são selecionadas novamente ao importar.
+            Importe imagens e vídeos da galeria como base, ou um template
+            editável .copex.json. Uma imagem pronta mantém seus textos e
+            desenhos em uma única camada. Exporte seus templates em JSON para
+            guardar ou compartilhar. Imagens dos designs acompanham o arquivo;
+            trilhas e legendas dos presets de vídeo são selecionadas novamente
+            ao importar.
           </p>
         </div>
       </div>

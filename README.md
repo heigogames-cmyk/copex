@@ -1,4 +1,4 @@
-# Copex Studio 3.2.0 — PC e Android
+# Copex Studio 3.2.2 — PC e Android
 
 Estúdio de criação para uso individual, sem login, assinatura ou cotas comerciais. O foco é preparar vídeos em lote e reutilizar templates. Implementação independente, orientada pelas telas da gravação fornecida; não utiliza código, identidade visual ou serviços internos da plataforma de referência.
 
@@ -164,3 +164,7 @@ Designs em massa agora entram na fila persistente de exportações. Você pode f
 Lotes concluídos podem ser excluídos para liberar espaço, preservando os arquivos originais. Downloads e publicações em andamento bloqueiam a exclusão. No Android, ZIPs de designs são baixados diretamente pelo gerenciador do sistema.
 
 A instalação do modelo de voz usa uma pasta temporária e só substitui o modelo anterior após conferir os arquivos; instalações simultâneas são bloqueadas e a interface acompanha o estado. A redução de ruído passou a ser aplicada também às imagens. Consulte [validação](docs/VALIDATION.md) para os testes e requisitos externos ainda não ativados.
+
+## Galeria no celular — 3.2.2
+
+Em **Templates → Importar template**, selecione uma imagem PNG/JPG/WebP ou um vídeo da galeria (MP4/MOV/WebM e outros formatos reconhecidos pelo servidor). Imagens viram designs salvos com uma camada de base; vídeos viram templates salvos com vínculo ao vídeo original e abrem no editor com esse arquivo selecionado. Ambos ficam disponíveis no mesmo servidor para PC e Android. O arquivo JSON continua sendo uma opção para transportar configurações e designs entre instalações. Vídeos não são incorporados ao JSON exportado; a interface informa essa diferença. Atualize o servidor Windows e reabra o aplicativo Android; não é necessário reinstalar o APK.

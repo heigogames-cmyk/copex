@@ -97,6 +97,7 @@ export function MediaLibrary({
       p.kind === "design"
         ? p.doc.elements.some((e) => ids.includes(e.assetId))
         : [
+            p.sourceAssetId,
             p.settings?.watermarkId,
             p.settings?.audioId,
             p.settings?.subtitleId,

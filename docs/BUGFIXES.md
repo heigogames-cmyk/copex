@@ -1,3 +1,11 @@
+# Galeria de imagens e vídeos — 3.2.2
+
+O importador de templates tratava qualquer arquivo como JSON. Agora reconhece imagens PNG/JPG/WebP e vídeos da galeria antes de interpretar templates portáteis. Imagens são guardadas como design com base visual; vídeos são guardados como presets com referência ao arquivo original. Aplicar um template de vídeo seleciona sua mídia-base no editor e informa quando ela foi removida. Backup de configuração preserva a referência; exportação portátil JSON informa que o vídeo precisa acompanhar a transferência separadamente. O catálogo mostra a miniatura da mídia. A biblioteca contabiliza referências dos vídeos-base.
+
+O cliente Android existente recebe o novo fluxo ao atualizar o servidor. O pacote Windows 3.2.2 preserva os dados no Ubuntu. O teste móvel novo importa uma imagem real, renderiza um PNG e confere seus pixels; outro importa vídeo real, confere a seleção, a persistência e a reutilização do catálogo.
+
+---
+
 # Revisão 3.2.0
 
 - Designs em massa deixaram de depender da conexão aberta com o editor; fila persistente, resultados por linha e repetição seletiva.

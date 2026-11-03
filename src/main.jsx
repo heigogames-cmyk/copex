@@ -458,7 +458,22 @@ function App() {
       navigate("exports");
     }
   };
-  const applyPreset = (p) => {
+  const applyPreset = (p, importedAsset) => {
+    if (p.sourceAssetId) {
+      const source =
+        importedAsset ||
+        state.assets.find(
+          (a) => a.id === p.sourceAssetId && a.type === "video",
+        );
+      if (!source)
+        return notify(
+          "O vídeo-base foi removido. Importe-o novamente da galeria.",
+          "error",
+        );
+      setSelected([source.id]);
+      setProjectId(null);
+      setProjectName(p.name);
+    }
     const next = { ...defaults, ...p.settings };
     let missing = false;
     for (const key of ["watermarkId", "audioId", "subtitleId"])
@@ -1281,7 +1296,15 @@ function PresetCard({ preset: p, index = 0, onClick, remove, actions }) {
         style={{ "--art-color": p.color || "#b9b0df" }}
         onClick={onClick}
       >
-        <PresetPoster preset={p} index={index} />
+        {p.thumbnail ? (
+          <img
+            src={p.thumbnail}
+            alt={p.name}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : (
+          <PresetPoster preset={p} index={index} />
+        )}
         <div className="template-use">
           <Plus size={16} /> Usar template
         </div>
@@ -3126,7 +3149,7 @@ function SettingsPage({ state, mutate, notify }) {
         <section className="panel settings-card">
           <h2>Sobre o Copex Studio</h2>
           <div className="version">
-            3.2.0 <span>INDEPENDENT STUDIO EDITION</span>
+            3.2.2 <span>INDEPENDENT STUDIO EDITION</span>
           </div>
           <p>
             Uso individual, sem login, planos ou cotas comerciais. O

@@ -327,3 +327,84 @@ test("phone touch gestures move design layers without needing a mouse", async ({
   ).toBeEnabled();
   await cdp.detach();
 });
+
+test("gallery image imports as a saved design base on mobile and renders a real export", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/#templates");
+  await page
+    .getByLabel("Importar template ou imagem", { exact: true })
+    .setInputFiles(imageFile);
+  await expect(
+    page.getByRole("dialog", { name: "Editor de design", exact: true }),
+  ).toBeVisible();
+  const saved = (await state(request)).presets.find(
+    (p) => p.kind === "design" && p.name === "mobile-real",
+  );
+  expect(saved.doc.elements[0].assetId).toBeTruthy();
+  expect(saved.doc.width).toBe(200);
+  const response = await request.post("/api/design/jobs", {
+    data: { doc: saved.doc, rows: [{}], format: "png" },
+  });
+  expect(response.status()).toBe(202);
+  const job = await response.json();
+  await expect
+    .poll(
+      async () =>
+        (await (await request.get("/api/jobs/" + job.id)).json()).status,
+    )
+    .toBe("done");
+  const output = (await (await request.get("/api/jobs/" + job.id)).json())
+    .outputs[0];
+  const pixel = await sharp(await (await request.get(output.url)).body())
+    .removeAlpha()
+    .raw()
+    .toBuffer();
+  expect([...pixel.subarray(0, 3)]).toEqual([170, 202, 135]);
+});
+test("gallery video imports as reusable video template with its own source selected", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/#templates");
+  await page
+    .getByLabel("Importar template ou imagem", { exact: true })
+    .setInputFiles(videoFile);
+  await expect(page).toHaveURL(/#editor$/);
+  const saved = (await state(request)).presets.find(
+    (p) => p.kind === "video" && p.name === "mobile-real",
+  );
+  expect(saved.sourceAssetId).toBeTruthy();
+  await expect(
+    page.locator(
+      'input[type="checkbox"][aria-label="Selecionar mobile-real.mp4"]:checked',
+    ),
+  ).toHaveCount(1);
+  const backup = await (await request.get("/api/backup")).json();
+  expect(backup.presets.find((p) => p.id === saved.id).sourceAssetId).toBe(
+    saved.sourceAssetId,
+  );
+  const portable = await (
+    await request.get("/api/presets/" + saved.id + "/export")
+  ).json();
+  expect(portable.template.sourceAssetId).toBeUndefined();
+  expect(portable.warnings.join(" ")).toContain("vídeo-base");
+  await page.goto("/#templates");
+  await page
+    .getByRole("button", { name: "Meus templates", exact: true })
+    .click();
+  await page
+    .locator(".template-card")
+    .filter({
+      has: page.getByRole("heading", { name: "mobile-real", exact: true }),
+    })
+    .getByRole("button", { name: /Usar template/ })
+    .click();
+  await expect(page).toHaveURL(/#editor$/);
+  await expect(
+    page.locator(
+      'input[type="checkbox"][aria-label="Selecionar mobile-real.mp4"]:checked',
+    ),
+  ).toHaveCount(1);
+});

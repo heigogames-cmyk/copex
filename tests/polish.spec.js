@@ -258,11 +258,13 @@ test("portable templates embed images, import new media and support favorites, d
   await page
     .getByRole("button", { name: "Importar template", exact: true })
     .click();
-  await page.locator('input[type=file][accept=".json"]').setInputFiles({
-    name: "portatil.copex.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(bundle)),
-  });
+  await page
+    .getByLabel("Importar template ou imagem", { exact: true })
+    .setInputFiles({
+      name: "portatil.copex.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(bundle)),
+    });
   await expect(page.getByRole("status")).toContainText("Template importado");
   let s = await state(request);
   const imported = s.presets.find(
