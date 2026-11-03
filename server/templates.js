@@ -168,12 +168,13 @@ export function registerTemplates({
           }
         }
       } else
-        for (const key of ["watermarkId", "audioId", "subtitleId"])
+        for (const key of ["watermarkId", "audioId", "subtitleId", "frameId"])
           if (template.settings[key]) {
             warnings.push(
               "O arquivo de " +
                 {
                   watermarkId: "marca d’água",
+                  frameId: "moldura",
                   audioId: "áudio",
                   subtitleId: "legenda",
                 }[key] +
@@ -265,7 +266,7 @@ export function registerTemplates({
             }
           }
         else
-          for (const key of ["watermarkId", "audioId", "subtitleId"])
+          for (const key of ["watermarkId", "audioId", "subtitleId", "frameId"])
             if (
               template.settings[key] &&
               !db.assets.some(
@@ -274,6 +275,7 @@ export function registerTemplates({
                   a.type ===
                     {
                       watermarkId: "image",
+                      frameId: "image",
                       audioId: "audio",
                       subtitleId: "subtitle",
                     }[key],

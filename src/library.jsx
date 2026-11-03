@@ -98,6 +98,7 @@ export function MediaLibrary({
         ? p.doc.elements.some((e) => ids.includes(e.assetId))
         : [
             p.sourceAssetId,
+            p.settings?.frameId,
             p.settings?.watermarkId,
             p.settings?.audioId,
             p.settings?.subtitleId,

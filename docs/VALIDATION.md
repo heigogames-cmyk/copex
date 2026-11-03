@@ -1,3 +1,9 @@
+# Moldura em massa — versão 3.3.0
+
+**52 testes Node e 47 testes Playwright passaram (99 no total)**, sem casos ignorados. FFmpeg real compôs dois vídeos diferentes na mesma imagem-base e os testes conferiram os pixels do cabeçalho, margens e vídeo, duração, áudio e transparência no modo conter. O teste móvel selecionou dois vídeos, aplicou uma moldura da biblioteca e conferiu os dois MP4 gerados. Geometria inválida importada permanece dentro dos limites do canvas. Toda a suíte anterior passou. Build de produção concluído; o APK 3.2.1 continua compatível ao atualizar o servidor.
+
+---
+
 # Galeria — versão 3.2.2
 
 **50 testes Node e 46 testes Playwright passaram (96 no total)**, sem casos ignorados. Os dois novos testes móveis importam imagem e vídeo reais pelo catálogo. A imagem vira design salvo, é renderizada e tem seus pixels conferidos. O vídeo fica vinculado ao preset, abre selecionado no editor e pode ser reutilizado pelo catálogo; backup conserva a referência e JSON portátil informa que a mídia deve ser transferida separadamente. Build de produção concluído. Atualização do servidor necessária; o APK 3.2.1 continua compatível.

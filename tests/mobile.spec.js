@@ -186,7 +186,7 @@ test("phone exposes every design layer and CSV control and sends real batch down
     saved.chunks.map((b) => Buffer.from(b, "base64")),
   );
   expect(buffer.length).toBe(saved.size);
-  expect(zipNames(buffer)).toEqual(["design-001.png", "design-002.png"]);
+  expect(zipNames(buffer).sort()).toEqual(["design-001.png", "design-002.png"]);
   await page
     .getByRole("button", { name: "Salvar template", exact: true })
     .click();

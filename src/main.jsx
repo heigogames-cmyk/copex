@@ -1,3 +1,4 @@
+import { frameGeometry } from "../shared/frame.js";
 import { MediaLibrary } from "./library.jsx";
 import { TemplateLibrary } from "./catalog.jsx";
 import { ExportCenter } from "./exports.jsx";
@@ -476,7 +477,7 @@ function App() {
     }
     const next = { ...defaults, ...p.settings };
     let missing = false;
-    for (const key of ["watermarkId", "audioId", "subtitleId"])
+    for (const key of ["watermarkId", "audioId", "subtitleId", "frameId"])
       if (next[key] && !state.assets.some((a) => a.id === next[key])) {
         next[key] = "";
         missing = true;
@@ -485,7 +486,7 @@ function App() {
     setOverrides({});
     navigate("editor");
     notify(
-      `Template “${p.name}” aplicado ao lote.${missing ? " Selecione novamente os arquivos de marca, áudio ou legenda ausentes." : ""}`,
+      `Template “${p.name}” aplicado ao lote.${missing ? " Selecione novamente os arquivos de moldura, marca, áudio ou legenda ausentes." : ""}`,
     );
   };
   const openProject = (p) => {
@@ -1457,10 +1458,78 @@ function BatchEditor({
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   });
+  const frameAsset = state.assets.find(
+    (a) => a.id === e.frameId && a.type === "image",
+  );
+  const frameRect = frameGeometry(e);
+  const applyFrame = (id) => {
+    const image = state.assets.find((a) => a.id === id && a.type === "image");
+    setScope("batch");
+    setSettings((old) => ({
+      ...old,
+      frameId: id,
+      ...(image
+        ? {
+            width: Math.max(
+              128,
+              Math.min(3840, Math.round(image.width / 2) * 2),
+            ),
+            height: Math.max(
+              128,
+              Math.min(3840, Math.round(image.height / 2) * 2),
+            ),
+          }
+        : {}),
+    }));
+    setOverrides((old) =>
+      Object.fromEntries(
+        Object.entries(old).map(([key, value]) => [
+          key,
+          Object.fromEntries(
+            Object.entries(value).filter(
+              ([field]) =>
+                ![
+                  "frameId",
+                  "frameX",
+                  "frameY",
+                  "frameWidth",
+                  "frameHeight",
+                  "width",
+                  "height",
+                  "fit",
+                ].includes(field),
+            ),
+          ),
+        ]),
+      ),
+    );
+    if (image) {
+      setSelected((ids) =>
+        ids.filter((key) =>
+          state.assets.some((a) => a.id === key && a.type === "video"),
+        ),
+      );
+      const video = state.assets.find(
+        (a) => a.type === "video" && selected.includes(a.id),
+      );
+      if (video) setCurrent(video.id);
+    }
+    setTab("Moldura");
+  };
   const previewStyle = {
     filter: `brightness(${Math.max(0.05, 1 + e.brightness)}) contrast(${e.contrast}) saturate(${e.filter === "mono" ? 0 : e.saturation}) ${e.filter === "warm" ? "sepia(.2)" : e.filter === "vintage" ? "sepia(.5)" : ""}`,
     transform: `scaleX(${e.mirror ? -1 : 1}) rotate(${e.rotation}deg)`,
     objectFit: e.fit === "cover" ? "cover" : "contain",
+    ...(frameAsset && asset?.type === "video"
+      ? {
+          position: "absolute",
+          left: `${(frameRect.x / frameRect.canvasWidth) * 100}%`,
+          top: `${(frameRect.y / frameRect.canvasHeight) * 100}%`,
+          width: `${(frameRect.width / frameRect.canvasWidth) * 100}%`,
+          height: `${(frameRect.height / frameRect.canvasHeight) * 100}%`,
+          zIndex: 1,
+        }
+      : {}),
   };
   const position =
     e.textPosition === "top"
@@ -1650,6 +1719,21 @@ function BatchEditor({
                 background: "#080b0a",
               }}
             >
+              {frameAsset && (
+                <img
+                  className="frame-background"
+                  src={frameAsset.url}
+                  alt="Moldura do lote"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "fill",
+                    pointerEvents: "none",
+                  }}
+                />
+              )}
               {asset ? (
                 <>
                   {asset.type === "video" ? (
@@ -1725,6 +1809,11 @@ function BatchEditor({
               )}
             </div>
           </div>
+          {asset?.type === "image" && (
+            <Button icon={Layers} onClick={() => applyFrame(asset.id)}>
+              Usar esta imagem como moldura dos vídeos
+            </Button>
+          )}
           <div className="preview-caption">
             <span>{asset?.name || "Nenhuma mídia selecionada"}</span>
             <small>
@@ -1782,6 +1871,7 @@ function BatchEditor({
             {[
               ["Projeto", Monitor],
               ["Imagem", ImageIcon],
+              ["Moldura", Layers],
               ["Texto", Type],
               ["Áudio", Volume2],
               ["Efeitos", Sparkles],
@@ -1799,6 +1889,138 @@ function BatchEditor({
             ))}
           </div>
           <div className="settings-scroll">
+            {tab === "Moldura" && (
+              <div className="settings-group">
+                <h3>Vídeos dentro da moldura</h3>
+                <p className="help-text">
+                  Escolha a arte da galeria e ajuste onde cada vídeo deve
+                  aparecer. A mesma composição vale para todos os vídeos
+                  selecionados.
+                </p>
+                <Field label="Imagem da moldura">
+                  <select
+                    aria-label="Imagem da moldura"
+                    value={s.frameId || ""}
+                    onChange={(ev) => applyFrame(ev.target.value)}
+                  >
+                    <option value="">Sem moldura</option>
+                    {state.assets
+                      .filter((a) => a.type === "image")
+                      .map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+                <Button icon={Upload} onClick={upload}>
+                  Adicionar imagem da galeria
+                </Button>
+                {frameAsset && (
+                  <>
+                    <Range
+                      label="Posição horizontal do vídeo"
+                      value={e.frameX}
+                      min={0}
+                      max={99}
+                      step={0.5}
+                      suffix="%"
+                      onChange={(v) => set("frameX", v)}
+                    />
+                    <Range
+                      label="Posição vertical do vídeo"
+                      value={e.frameY}
+                      min={0}
+                      max={99}
+                      step={0.5}
+                      suffix="%"
+                      onChange={(v) => set("frameY", v)}
+                    />
+                    <Range
+                      label="Largura da área do vídeo"
+                      value={e.frameWidth}
+                      min={1}
+                      max={100}
+                      step={0.5}
+                      suffix="%"
+                      onChange={(v) => set("frameWidth", v)}
+                    />
+                    <Range
+                      label="Altura da área do vídeo"
+                      value={e.frameHeight}
+                      min={1}
+                      max={100}
+                      step={0.5}
+                      suffix="%"
+                      onChange={(v) => set("frameHeight", v)}
+                    />
+                    <Field label="Encaixe na área">
+                      <select
+                        aria-label="Encaixe na moldura"
+                        value={e.fit}
+                        onChange={(ev) => set("fit", ev.target.value)}
+                      >
+                        <option value="cover">
+                          Preencher a área (recorta as bordas)
+                        </option>
+                        <option value="contain">Mostrar o vídeo inteiro</option>
+                      </select>
+                    </Field>
+                    <Button
+                      onClick={() => {
+                        setScope("batch");
+                        setSettings((old) => ({
+                          ...old,
+                          frameId: e.frameId,
+                          frameX: e.frameX,
+                          frameY: e.frameY,
+                          frameWidth: e.frameWidth,
+                          frameHeight: e.frameHeight,
+                          width: e.width,
+                          height: e.height,
+                          fit: e.fit,
+                        }));
+                        setOverrides((old) =>
+                          Object.fromEntries(
+                            Object.entries(old).map(([key, value]) => [
+                              key,
+                              Object.fromEntries(
+                                Object.entries(value).filter(
+                                  ([field]) =>
+                                    ![
+                                      "frameId",
+                                      "frameX",
+                                      "frameY",
+                                      "frameWidth",
+                                      "frameHeight",
+                                      "width",
+                                      "height",
+                                      "fit",
+                                    ].includes(field),
+                                ),
+                              ),
+                            ]),
+                          ),
+                        );
+                        setSelected((ids) =>
+                          ids.filter((id) =>
+                            state.assets.some(
+                              (a) => a.id === id && a.type === "video",
+                            ),
+                          ),
+                        );
+                        notify(
+                          "Moldura aplicada a todos os vídeos selecionados.",
+                        );
+                      }}
+                    >
+                      Aplicar moldura ao lote inteiro
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+
             <Field label="Aplicar template">
               <select
                 value=""
@@ -2338,8 +2560,9 @@ function BatchEditor({
               />
             </Field>
             <p className="help-text">
-              Os ajustes globais deste lote serão salvos. Mídias, cortes
-              individuais e arquivos importados não fazem parte do template.
+              Os ajustes globais e a moldura da sua biblioteca ficam vinculados
+              ao template. Os vídeos selecionados e os cortes individuais não
+              fazem parte dele.
             </p>
           </div>
           <div className="modal-actions">
@@ -3149,7 +3372,7 @@ function SettingsPage({ state, mutate, notify }) {
         <section className="panel settings-card">
           <h2>Sobre o Copex Studio</h2>
           <div className="version">
-            3.2.2 <span>INDEPENDENT STUDIO EDITION</span>
+            3.3.0 <span>INDEPENDENT STUDIO EDITION</span>
           </div>
           <p>
             Uso individual, sem login, planos ou cotas comerciais. O

@@ -556,6 +556,7 @@ async function renderItem(job, entry, i, total, signal) {
   });
   for (const [key, type] of [
     ["watermarkId", "image"],
+    ["frameId", "image"],
     ["audioId", "audio"],
     ["subtitleId", "subtitle"],
   ])
@@ -564,7 +565,7 @@ async function renderItem(job, entry, i, total, signal) {
       !db.assets.some((asset) => asset.id === s[key] && asset.type === type)
     )
       throw Error(
-        "Um arquivo usado no template não está mais disponível. Selecione novamente marca, áudio ou legenda.",
+        "Um arquivo usado no template não está mais disponível. Selecione novamente moldura, marca, áudio ou legenda.",
       );
   const stem = String(job.prefix || "copex")
     .replace(/[^a-zA-Z0-9_-]/g, "_")
@@ -599,6 +600,11 @@ async function renderItem(job, entry, i, total, signal) {
       watermark: wm && assetPath(wm),
       audio: au && assetPath(au),
       subtitle: sub && assetPath(sub),
+      frame:
+        s.frameId &&
+        assetPath(
+          db.assets.find((x) => x.id === s.frameId && x.type === "image"),
+        ),
       signal,
       onProgress: (p) => {
         job.progress = Math.round(((i + p / 100) / total) * 100);
@@ -611,6 +617,8 @@ async function renderItem(job, entry, i, total, signal) {
       await fs.unlink(out);
     } else files = [out];
   } else if (a.type === "image") {
+    if (s.frameId)
+      throw Error("Selecione apenas vídeos para aplicar a moldura ao lote.");
     let im = sharp(assetPath(a))
       .rotate(s.rotation)
       .resize(s.width, s.height, {

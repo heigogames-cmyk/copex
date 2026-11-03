@@ -1,4 +1,4 @@
-# Copex Studio 3.2.2 — PC e Android
+# Copex Studio 3.3.0 — PC e Android
 
 Estúdio de criação para uso individual, sem login, assinatura ou cotas comerciais. O foco é preparar vídeos em lote e reutilizar templates. Implementação independente, orientada pelas telas da gravação fornecida; não utiliza código, identidade visual ou serviços internos da plataforma de referência.
 
@@ -168,3 +168,11 @@ A instalação do modelo de voz usa uma pasta temporária e só substitui o mode
 ## Galeria no celular — 3.2.2
 
 Em **Templates → Importar template**, selecione uma imagem PNG/JPG/WebP ou um vídeo da galeria (MP4/MOV/WebM e outros formatos reconhecidos pelo servidor). Imagens viram designs salvos com uma camada de base; vídeos viram templates salvos com vínculo ao vídeo original e abrem no editor com esse arquivo selecionado. Ambos ficam disponíveis no mesmo servidor para PC e Android. O arquivo JSON continua sendo uma opção para transportar configurações e designs entre instalações. Vídeos não são incorporados ao JSON exportado; a interface informa essa diferença. Atualize o servidor Windows e reabra o aplicativo Android; não é necessário reinstalar o APK.
+
+## Moldura sobre vários vídeos — 3.3.0
+
+No **Editor em lote**, selecione os vídeos, abra a aba **Moldura** e escolha a imagem da galeria. A arte vira o fundo da composição; cada vídeo é colocado na área definida por posição horizontal/vertical e largura/altura. A prévia e o exportador usam a mesma geometria. Escolha preencher (com recorte) ou mostrar o vídeo inteiro; nesse segundo modo, a imagem-base permanece visível nas sobras da área. Clique em **Aplicar moldura ao lote inteiro** para unificar a composição, inclusive se havia ajustes individuais diferentes. A imagem-base é removida da seleção de arquivos a exportar.
+
+**Exportar lote** gera um MP4 por vídeo com a mesma moldura. Áudio, duração, legendas e marca d'água continuam disponíveis. **Salvar template** guarda os ajustes e a referência à moldura para outros lotes no mesmo servidor; o arquivo JSON portátil não incorpora essa imagem e informa que ela precisa ser selecionada no destino. Projetos e backup de configuração conservam os ajustes; o backup completo deve incluir as mídias. A biblioteca bloqueia a exclusão da moldura enquanto uma exportação que a utiliza estiver pendente ou em andamento.
+
+Atualize o pacote Windows para 3.3.0 e reabra o aplicativo Android. O APK existente continua compatível.

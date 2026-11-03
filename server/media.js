@@ -1,3 +1,4 @@
+import { frameGeometry } from "../shared/frame.js";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
@@ -100,6 +101,10 @@ export function normalizeSettings(raw = {}) {
     ["watermarkOpacity", 0, 1],
     ["watermarkSize", 5, 60],
     ["splitSeconds", 0, 3600],
+    ["frameX", 0, 99],
+    ["frameY", 0, 99],
+    ["frameWidth", 1, 100],
+    ["frameHeight", 1, 100],
   ])
     s[k] = bounded(s[k], min, max, defaults[k]);
   s.width = Math.round(s.width / 2) * 2;
@@ -109,7 +114,7 @@ export function normalizeSettings(raw = {}) {
   for (const [key, value] of Object.entries(defaults))
     if (typeof value === "boolean")
       s[key] = typeof s[key] === "boolean" ? s[key] : value;
-  for (const key of ["watermarkId", "audioId", "subtitleId"])
+  for (const key of ["watermarkId", "audioId", "subtitleId", "frameId"])
     s[key] = typeof s[key] === "string" ? s[key].trim().slice(0, 120) : "";
   s.filter = ["none", "mono", "warm", "cool", "vintage"].includes(s.filter)
     ? s.filter
@@ -159,6 +164,7 @@ export async function renderVideo({
   duration,
   hasAudio,
   watermark,
+  frame,
   audio,
   subtitle,
   onProgress,
@@ -170,6 +176,13 @@ export async function renderVideo({
   if (audio) audio = path.resolve(audio);
   if (subtitle) subtitle = path.resolve(subtitle);
   const s = normalizeSettings(settings);
+  if (s.frameId && !frame)
+    throw Error(
+      "A imagem da moldura não está disponível. Selecione novamente a moldura.",
+    );
+  const rect = frameGeometry(s);
+  const targetWidth = frame ? rect.width : s.width,
+    targetHeight = frame ? rect.height : s.height;
   const end = s.end > 0 ? Math.min(s.end, duration) : duration;
   if (s.start >= end)
     throw Error("O início do corte precisa ser menor que o fim do vídeo.");
@@ -186,7 +199,19 @@ export async function renderVideo({
   ];
   let index = 1,
     waterIndex,
-    audioIndex;
+    audioIndex,
+    frameIndex;
+  if (frame) {
+    frameIndex = index++;
+    args.push(
+      "-loop",
+      "1",
+      "-framerate",
+      String(s.fps),
+      "-i",
+      path.resolve(frame),
+    );
+  }
   if (watermark) {
     waterIndex = index++;
     args.push("-i", watermark);
@@ -202,8 +227,8 @@ export async function renderVideo({
   if (s.mirror) filters.push("hflip");
   filters.push(
     s.fit === "cover"
-      ? `scale=${s.width}:${s.height}:force_original_aspect_ratio=increase,crop=${s.width}:${s.height}`
-      : `scale=${s.width}:${s.height}:force_original_aspect_ratio=decrease,pad=${s.width}:${s.height}:(ow-iw)/2:(oh-ih)/2:color=black`,
+      ? `scale=${targetWidth}:${targetHeight}:force_original_aspect_ratio=increase,crop=${targetWidth}:${targetHeight}`
+      : `scale=${targetWidth}:${targetHeight}:force_original_aspect_ratio=decrease,${frame ? "format=rgba," : ""}pad=${targetWidth}:${targetHeight}:(ow-iw)/2:(oh-ih)/2:color=${frame ? "black@0" : "black"}`,
   );
   filters.push(
     "setsar=1",
@@ -223,6 +248,7 @@ export async function renderVideo({
     filters.push(
       `fade=t=out:st=${Math.max(0, outDuration - s.fadeOut)}:d=${Math.min(s.fadeOut, outDuration)}`,
     );
+  const canvasFilters = [];
   let subtitleFile;
   if (subtitle) {
     subtitleFile = path.join(
@@ -237,7 +263,7 @@ export async function renderVideo({
     );
     await fs.writeFile(subtitleFile, retimed);
     if (retimed.trim())
-      filters.push(
+      canvasFilters.push(
         `subtitles=filename='${path.basename(subtitleFile)}':force_style='FontName=DejaVu Sans,FontSize=20,Outline=2,Alignment=2,MarginV=25'`,
       );
   }
@@ -254,17 +280,23 @@ export async function renderVideo({
         : s.textPosition === "center"
           ? "(h-text_h)/2"
           : "h*0.84-text_h/2";
-    filters.push(
+    canvasFilters.push(
       `drawtext=textfile='${path.basename(textFile)}':expansion=none:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=${s.fontSize}:fontcolor=${s.textColor.replace("#", "0x")}@${s.textOpacity}:x=(w-text_w)/2:y=${y}:line_spacing=12${s.textBox ? ":box=1:boxcolor=black@0.48:boxborderw=18" : ":shadowcolor=black@0.6:shadowx=2:shadowy=2"}`,
     );
   }
   let graph = `[0:v]${filters.join(",")}[base]`;
+  if (frame)
+    graph = `[0:v]${filters.join(",")}[clip];[${frameIndex}:v]scale=${s.width}:${s.height},setsar=1[paper];[paper][clip]overlay=${rect.x}:${rect.y}:shortest=1[base]`;
   let v = "base";
+  if (canvasFilters.length) {
+    graph += `;[${v}]${canvasFilters.join(",")}[captioned]`;
+    v = "captioned";
+  }
   if (watermark) {
     const ww = Math.round((s.width * s.watermarkSize) / 100);
     const x = s.watermarkPosition.endsWith("right") ? "W-w-30" : "30";
     const y = s.watermarkPosition.startsWith("bottom") ? "H-h-30" : "30";
-    graph += `;[${waterIndex}:v]scale=${ww}:-1,format=rgba,colorchannelmixer=aa=${s.watermarkOpacity}[wm];[base][wm]overlay=${x}:${y}[video]`;
+    graph += `;[${waterIndex}:v]scale=${ww}:-1,format=rgba,colorchannelmixer=aa=${s.watermarkOpacity}[wm];[${v}][wm]overlay=${x}:${y}[video]`;
     v = "video";
   }
   let a = "";

@@ -1,3 +1,11 @@
+# Composição em massa com moldura — 3.3.0
+
+O editor agora compõe a imagem-base com cada vídeo selecionado em uma área ajustável. A geometria é compartilhada entre prévia e FFmpeg, com limites e dimensões pares para codificação H.264. O modo conter preserva a moldura nas áreas não ocupadas pelo vídeo; preencher recorta apenas a mídia para caber na área. Legendas/texto são aplicados depois da composição, e áudio/duração são conservados. O comando aplicar ao lote limpa diferenças individuais de moldura, dimensões e encaixe sem apagar outros ajustes.
+
+Os testes verificam pixels do cabeçalho, margem e vídeo em duas saídas diferentes, preservação de áudio/duração e letterbox transparente, além da seleção/exportação em viewport móvel. Uma referência da biblioteca foi corrigida durante a regressão. A comparação de nomes no ZIP passou a ordenar a lista: a ordem interna do arquivo não é um requisito e pode variar com a leitura assíncrona.
+
+---
+
 # Galeria de imagens e vídeos — 3.2.2
 
 O importador de templates tratava qualquer arquivo como JSON. Agora reconhece imagens PNG/JPG/WebP e vídeos da galeria antes de interpretar templates portáteis. Imagens são guardadas como design com base visual; vídeos são guardados como presets com referência ao arquivo original. Aplicar um template de vídeo seleciona sua mídia-base no editor e informa quando ela foi removida. Backup de configuração preserva a referência; exportação portátil JSON informa que o vídeo precisa acompanhar a transferência separadamente. O catálogo mostra a miniatura da mídia. A biblioteca contabiliza referências dos vídeos-base.

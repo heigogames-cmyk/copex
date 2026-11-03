@@ -8,7 +8,9 @@ export function assetBusy(db, id, activeDesignAssets) {
         (["queued", "running"].includes(j.status) || j.stopping) &&
         (j.assetIds.includes(id) ||
           [j.settings, ...Object.values(j.overrides || {})].some((s) =>
-            [s?.watermarkId, s?.audioId, s?.subtitleId].includes(id),
+            [s?.frameId, s?.watermarkId, s?.audioId, s?.subtitleId].includes(
+              id,
+            ),
           )),
     )
   )
